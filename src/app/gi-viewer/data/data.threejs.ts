@@ -1,16 +1,13 @@
 import * as THREE from 'three';
-import { GIModel } from '@libs/geo-info/GIModel';
-import { IThreeJS } from '@libs/geo-info/ThreejsJSON';
-import { EEntTypeStr, EEntType } from '@libs/geo-info/common';
-import { Vector3 } from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
 import { DataService } from '@services';
-import { Vector } from '@assets/core/modules/basic/calc';
 import { ISettings } from './data.threejsSettings';
 
 import { DataThreejsLookAt } from './data.threejsLookAt';
-import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { isArray } from 'util';
+//@ts-ignore
+import { mergeBufferGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils';
+import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
+import { Model, GICommon} from '@design-automation/mobius-sim-funcs';
 
 enum MaterialType {
     MeshBasicMaterial = 'MeshBasicMaterial',
@@ -19,7 +16,7 @@ enum MaterialType {
     MeshPhongMaterial = 'MeshPhongMaterial',
     MeshPhysicalMaterial = 'MeshPhysicalMaterial'
 }
-
+const textFontLoader = new THREE.FontLoader();
 /**
  * ThreejsScene Add
  */
@@ -66,7 +63,7 @@ export class DataThreejs extends DataThreejsLookAt {
         }
     }
 
-    public populateScene(model: GIModel, container): void {
+    public async populateScene(model: Model, container) {
         const cameraSettings = localStorage.getItem('gi_camera');
         if (cameraSettings && JSON.parse(cameraSettings)) {
             const cam = JSON.parse(cameraSettings);
@@ -90,7 +87,7 @@ export class DataThreejs extends DataThreejsLookAt {
         this.ObjLabelMap.clear();
         this.textLabels.clear();
 
-        this._addGeom(model);
+        await this._addGeom(model);
 
         const position_size = this.settings.positions.size;
         this.raycaster.params.Points.threshold = position_size > 1 ? position_size / 3 : position_size / 4;
@@ -109,74 +106,64 @@ export class DataThreejs extends DataThreejsLookAt {
             if (old) {
                 container.removeChild(old);
             }
-            // setTimeout(() => { this._getNodeSelect(); }, 10);
-            if (!this.model.modeldata.attribs.query.hasEntAttrib(EEntType.MOD, 'hud')) { return; }
+            if (!this.model.modeldata.attribs.query.hasEntAttrib(GICommon.EEntType.MOD, 'hud')) { return; }
             const hud = this.model.modeldata.attribs.get.getModelAttribVal('hud') as string;
             const element = this._createHud(hud).element;
-            if (container) {
-                container.appendChild(element);
-            }
+            container.appendChild(element);
             old = null;
         }, 0);
     }
-
-    private _addGeom(model: GIModel): void {
+    // replaces rgb values with THREE.Color objects
+    private _replaceColors(materials: object[], keys: string[]): void {
+        for (const mat of materials) {
+            for (const color_key of keys) {
+                const rgb = mat[color_key];
+                if (rgb === undefined) { continue; }
+                if (!Array.isArray(rgb)) { continue; }
+                mat[color_key] = new THREE.Color(rgb[0], rgb[1], rgb[2]);
+            }
+        }
+    }
+    private async _addGeom(model: Model) {
         // Add geometry
-        const threejs_data: IThreeJS = model.get3jsData(this.nodeIndex);
-        this.tri_select_map = threejs_data.tri_select_map;
-        this.edge_select_map = threejs_data.edge_select_map;
-        this.point_select_map = threejs_data.point_select_map;
-        this.posis_map = threejs_data.posis_map;
-        this.vertex_map = threejs_data.verts_map;
+        const threejs_data = model.get3jsData(this.nodeIndex);
+        this.select_maps = {
+            _t: threejs_data.tri_select_map,
+            _e: threejs_data.edge_select_map,
+            _v: threejs_data.verts_map,
+            pt: threejs_data.point_select_map,
+            ps: threejs_data.posis_map,
+
+            _e_vr: threejs_data.vrmesh_edge_select_map,
+            _t_vr: threejs_data.vrmesh_tri_select_map,
+        };
         this.positions = [];
 
         // Get materials
         const pline_material_groups = threejs_data.pline_material_groups;
+        const vrmesh_pline_material_groups = threejs_data.vrmesh_pline_material_groups;
         const pline_materials = threejs_data.pline_materials;
+        this._replaceColors(pline_materials, ['color']);
         const pgon_material_groups = threejs_data.pgon_material_groups;
+        const vrmesh_pgon_material_groups = threejs_data.vrmesh_pgon_material_groups;
         const pgon_materials = threejs_data.pgon_materials;
+        this._replaceColors(pgon_materials, ['color', 'specular', 'emissive']);
 
         // Create buffers that will be used by all geometry
         const verts_xyz_buffer = new THREE.Float32BufferAttribute(threejs_data.verts_xyz, 3);
         const normals_buffer = new THREE.Float32BufferAttribute(threejs_data.normals, 3);
         const colors_buffer = new THREE.Float32BufferAttribute(threejs_data.colors, 3);
         const posis_xyz_buffer = new THREE.Float32BufferAttribute(threejs_data.posis_xyz, 3);
-        this._addTris(threejs_data.tri_indices, verts_xyz_buffer, colors_buffer, normals_buffer, pgon_material_groups, pgon_materials);
-        this._addLines(threejs_data.edge_indices, verts_xyz_buffer, colors_buffer, pline_material_groups, pline_materials);
+        this._addTris(threejs_data.tri_indices, threejs_data.vrmesh_tri_indices, threejs_data.vrmesh_hidden_tri_indices,
+            verts_xyz_buffer, colors_buffer, normals_buffer,
+            pgon_material_groups, vrmesh_pgon_material_groups, pgon_materials);
+        this._addLines(threejs_data.edge_indices, threejs_data.vrmesh_edge_indices, threejs_data.vrmesh_hidden_edge_indices,
+            verts_xyz_buffer, colors_buffer, pline_material_groups, vrmesh_pline_material_groups, pline_materials);
         this._addPoints(threejs_data.point_indices, verts_xyz_buffer, colors_buffer, [255, 255, 255], this.settings.positions.size + 1);
-
-        // if (threejs_data.timeline) {
-        //     this.timelineEnabled = true;
-        //     this.timeline = threejs_data.timeline.__time_points__;
-        //     if (!this.current_time_point || this.timeline.indexOf(this.current_time_point) === -1) {
-        //         this.current_time_point = this.timeline[this.timeline.length - 1];
-        //     }
-        //     this.timeline_groups = {};
-        //     for (const time_point of this.timeline) {
-        //         const obj_group = new THREE.Group();
-        //         const timeline_data = threejs_data.timeline[time_point];
-        //         const tri = this._addTimelineTris(timeline_data.triangle_indices, verts_xyz_buffer, colors_buffer,
-        //                     normals_buffer, material_groups, materials);
-        //         const lines = this._addTimelineLines(timeline_data.edge_indices, threejs_data.white_edge_indices,
-        //                     verts_xyz_buffer, colors_buffer, normals_buffer);
-        //         const points = this._addTimelinePoints(timeline_data.point_indices, verts_xyz_buffer,
-        //                     colors_buffer, [255, 255, 255], this.settings.positions.size + 1);
-        //         obj_group.add(tri);
-        //         obj_group.add(lines[0]);
-        //         obj_group.add(lines[1]);
-        //         obj_group.add(points);
-        //         this.timeline_groups[time_point] = obj_group;
-        //     }
-        //     this.scene.add(this.timeline_groups[this.current_time_point]);
-        // } else {
-        //     this.timelineEnabled = false;
-        //     this.timeline = null;
-        //     this.timeline_groups = null;
-        // }
 
         this._addPosis(threejs_data.posis_indices, posis_xyz_buffer, this.settings.colors.position, this.settings.positions.size);
 
-        this._addPointLabels(model);
+        await this._addPlaneLabels(model);
 
     }
 
@@ -245,27 +232,6 @@ export class DataThreejs extends DataThreejsLookAt {
             this._addDirectionalLight();
         }
     }
-    // private _getNodeSelect(): void {
-    //     const select_node: any = this.model.modeldata.attribs.get.getModelAttribVal('select_node');
-    //     this.timelineEnabled = null;
-    //     if (!select_node || !select_node.nodes) { return; }
-    //     this.timeline_groups = select_node.nodes;
-    //     const currentIndex = this.timeline_groups.indexOf(this.dataService.node.name);
-    //     if (currentIndex !== -1) {
-    //         this.timelineEnabled = 1;
-    //         this.timelineIndex = currentIndex.toString();
-    //         this.timelineValue = this.dataService.node.name;
-    //         if (select_node.widget === 'dropdown') {
-    //             this.timelineEnabled = 2;
-    //         }
-    //     }
-    //     if (this.dataService.timelineDefault && select_node.default) {
-    //         const nodeSelInput = <HTMLInputElement> document.getElementById('hidden_node_selection');
-    //         nodeSelInput.value = select_node.default;
-    //         (<HTMLButtonElement> document.getElementById('hidden_node_selection_button')).click();
-    //         this.dataService.timelineDefault = false;
-    //     }
-    // }
     /**
      *
      * @param scale
@@ -430,10 +396,11 @@ export class DataThreejs extends DataThreejsLookAt {
     /**
      * Add threejs triangles to the scene
      */
-    private _addTris(tris_i: number[], posis_buffer: THREE.Float32BufferAttribute,
+    private _addTris(tris_i: number[], vrmesh_tris_i: number[], vrmesh_hidden_tris_i: number[],
+                     posis_buffer: THREE.Float32BufferAttribute,
                      colors_buffer: THREE.Float32BufferAttribute,
                      normals_buffer: THREE.Float32BufferAttribute,
-                     material_groups, materials): void {
+                     material_groups, vrmesh_material_groups, materials): void {
         const geom = new THREE.BufferGeometry();
         geom.setIndex(tris_i);
         geom.setAttribute('position', posis_buffer);
@@ -448,6 +415,30 @@ export class DataThreejs extends DataThreejsLookAt {
             geom.addGroup(element[0], element[1], element[2]);
         });
         // this._buffer_geoms.push(geom);
+
+        const vrmesh_geom = new THREE.BufferGeometry();
+        vrmesh_geom.setIndex(vrmesh_tris_i);
+        vrmesh_geom.setAttribute('position', posis_buffer);
+        if (normals_buffer.count > 0) {
+            vrmesh_geom.setAttribute('normal', normals_buffer);
+        }
+        vrmesh_geom.setAttribute('color', colors_buffer);
+        vrmesh_geom.clearGroups();
+        vrmesh_material_groups.forEach(element => {
+            vrmesh_geom.addGroup(element[0], element[1], element[2]);
+        });
+
+        const vrmesh_hidden_geom = new THREE.BufferGeometry();
+        vrmesh_hidden_geom.setIndex(vrmesh_hidden_tris_i);
+        vrmesh_hidden_geom.setAttribute('position', posis_buffer);
+        if (normals_buffer.count > 0) {
+            vrmesh_hidden_geom.setAttribute('normal', normals_buffer);
+        }
+        vrmesh_hidden_geom.setAttribute('color', colors_buffer);
+        vrmesh_hidden_geom.clearGroups();
+        vrmesh_material_groups.forEach(element => {
+            vrmesh_hidden_geom.addGroup(element[0], element[1], element[2]);
+        });
 
         const material_arr = [];
         let index = 0;
@@ -480,6 +471,7 @@ export class DataThreejs extends DataThreejsLookAt {
                         element.envMap = this.scene.background;
                     }
                     mat = new THREE.MeshPhysicalMaterial(element);
+                    mat.attenuationColor = mat.attenuationTint;
                 } else if (element.type === MaterialType.MeshLambertMaterial) {
                     delete element.type;
                     mat = new THREE.MeshLambertMaterial(element);
@@ -492,6 +484,10 @@ export class DataThreejs extends DataThreejsLookAt {
         }
         const mesh = new THREE.Mesh(geom, material_arr);
         mesh.name = 'obj_tri';
+        const vrmesh_mesh = new THREE.Mesh(vrmesh_geom, material_arr);
+        vrmesh_mesh.name = 'obj_tri_navmesh';
+        const vrmesh_hidden_mesh = new THREE.Mesh(vrmesh_hidden_geom, material_arr);
+        vrmesh_hidden_mesh.name = 'obj_tri_hidden_navmesh';
 
         mesh.geometry.computeBoundingSphere();
         if (normals_buffer.count === 0) {
@@ -500,57 +496,53 @@ export class DataThreejs extends DataThreejsLookAt {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
+        vrmesh_mesh.geometry.computeBoundingSphere();
+        if (normals_buffer.count === 0) {
+            vrmesh_mesh.geometry.computeVertexNormals();
+        }
+        vrmesh_mesh.castShadow = true;
+        vrmesh_mesh.receiveShadow = true;
+
+        vrmesh_hidden_mesh.geometry.computeBoundingSphere();
+        if (normals_buffer.count === 0) {
+            vrmesh_hidden_mesh.geometry.computeVertexNormals();
+        }
+        vrmesh_hidden_mesh.visible = false;
+
         // show vertex normals
-        this.vnh = new THREE.VertexNormalsHelper(mesh, this.settings.normals.size, 0x0000ff);
+        this.vnh = new VertexNormalsHelper(mesh, this.settings.normals.size, 0x0000ff);
         this.vnh.visible = this.settings.normals.show;
         this.scene.add(this.vnh);
+
         this.scene_objs.push(mesh);
+        this.scene_objs.push(vrmesh_mesh);
+        this.scene_objs.push(vrmesh_hidden_mesh);
+
         // add mesh to scene
         this.scene.add(mesh);
-        this.threejs_nums[2] = tris_i.length / 3;
+        this.scene.add(vrmesh_mesh);
+        this.scene.add(vrmesh_hidden_mesh);
+        this.threejs_nums[2] = (tris_i.length + vrmesh_tris_i.length) / 3;
     }
 
     // ============================================================================
     /**
      * Add threejs lines to the scene
      */
-    private _addLines(lines_i: number[],
+    private _addLines(lines_i: number[], vrmesh_lines_i: number[], vrmesh_hidden_lines_i: number[],
                     posis_buffer: THREE.Float32BufferAttribute,
                     color_buffer: THREE.Float32BufferAttribute,
-                    material_groups, materials): void {
+                    material_groups, vrmesh_material_groups, materials): void {
         const geom = new THREE.BufferGeometry();
         geom.setIndex(lines_i);
         geom.setAttribute('position', posis_buffer);
         geom.setAttribute('color', color_buffer);
         // this._buffer_geoms.push(geom);
 
-        // // // geom.addAttribute( 'color', new THREE.Float32BufferAttribute( colors_flat, 3 ) );
-        // const mat = new THREE.LineDashedMaterial({
-        //     color: 0x000000,
-        //     vertexColors: THREE.VertexColors,
-        //     gapSize: 0
-        // });
-        // const line = new THREE.LineSegments(geom, mat);
-        // this.scene_objs.push(line);
-        // this.scene.add(line);
-
-        // const geom_white = new THREE.BufferGeometry();
-        // geom_white.setIndex(white_line_i);
-        // geom_white.setAttribute('position', posis_buffer);
-        // geom_white.setAttribute('color', color_buffer);
-        // // this._buffer_geoms.push(geom_white);
-
-        // // // geom.addAttribute( 'color', new THREE.Float32BufferAttribute( colors_flat, 3 ) );
-        // const mat_white = new THREE.LineDashedMaterial({
-        //     color: 0xFFFFFF,
-        //     vertexColors: THREE.VertexColors,
-        //     gapSize: 0
-        // });
-        // const line_white = new THREE.LineSegments(geom_white, mat_white);
-        // this.scene_objs.push(line_white);
-        // this.scene.add(line_white);
-
-        // this.threejs_nums[1] = lines_i.length  / 2;
+        const vrmesh_geom = new THREE.BufferGeometry();
+        vrmesh_geom.setIndex(vrmesh_lines_i);
+        vrmesh_geom.setAttribute('position', posis_buffer);
+        vrmesh_geom.setAttribute('color', color_buffer);
 
 
         const material_arr = [];
@@ -561,7 +553,7 @@ export class DataThreejs extends DataThreejsLookAt {
             if (element.type === 'LineBasicMaterial') {
                 const mat = new THREE.LineDashedMaterial({
                     color: element.color || 0,
-                    vertexColors: THREE.VertexColors,
+                    vertexColors: true,
                     scale: 1,
                     dashSize: 1000,
                     gapSize: 0,
@@ -573,7 +565,7 @@ export class DataThreejs extends DataThreejsLookAt {
                     scale: element.scale || 1,
                     dashSize: element.dashSize || 2,
                     gapSize: element.gapSize || 1,
-                    vertexColors: THREE.VertexColors
+                    vertexColors: true
                 });
                 material_arr.push(mat);
             }
@@ -581,14 +573,25 @@ export class DataThreejs extends DataThreejsLookAt {
         material_groups.forEach(element => {
             geom.addGroup(element[0], element[1], element[2]);
         });
+        vrmesh_material_groups.forEach(element => {
+            vrmesh_geom.addGroup(element[0], element[1], element[2]);
+        });
         const newGeom = geom.toNonIndexed();
+        const vrmesh_newGeom = vrmesh_geom.toNonIndexed();
 
         const line = new THREE.LineSegments(newGeom, material_arr);
         line.name = 'obj_line';
         line.computeLineDistances();
         this.scene_objs.push(line);
         this.scene.add(line);
-        this.threejs_nums[1] = lines_i.length / 2;
+
+        const vrmesh_line = new THREE.LineSegments(vrmesh_newGeom, material_arr);
+        vrmesh_line.name = 'obj_line_navmesh';
+        vrmesh_line.computeLineDistances();
+        this.scene_objs.push(vrmesh_line);
+        this.scene.add(vrmesh_line);
+
+        this.threejs_nums[1] = (lines_i.length + vrmesh_lines_i.length) / 2;
 
     }
     // ============================================================================
@@ -598,7 +601,7 @@ export class DataThreejs extends DataThreejsLookAt {
     private _addPoints(points_i: number[],
                         posis_buffer: THREE.Float32BufferAttribute,
                         colors_buffer: THREE.Float32BufferAttribute,
-                        color: [number, number, number],
+                        color: any,
                         size: number = 1): void {
         const geom = new THREE.BufferGeometry();
         geom.setIndex(points_i);
@@ -611,7 +614,7 @@ export class DataThreejs extends DataThreejsLookAt {
         const mat = new THREE.PointsMaterial({
             // color: new THREE.Color(rgb),
             size: size,
-            vertexColors: THREE.VertexColors,
+            vertexColors: true,
             sizeAttenuation: false
         });
         const point = new THREE.Points(geom, mat);
@@ -624,76 +627,97 @@ export class DataThreejs extends DataThreejsLookAt {
     /**
      * Add threejs points to the scene
      */
-    private _addPointLabels(model: GIModel): void {
-        const labels = model.modeldata.attribs.get.getModelAttribVal('labels');
-        if (!labels || !isArray(labels) || labels.length === 0) {
+     private async _addPlaneLabels(model: Model) {
+        let pgon, pgon_label, coords_attrib;
+        try {
+            pgon = model.modeldata.geom.query.getEnts(GICommon.EEntType.PGON);
+            pgon_label = <any> model.modeldata.attribs.get.getEntAttribVal(GICommon.EEntType.PGON, pgon, 'text');
+            coords_attrib = model.modeldata.attribs.attribs_maps.get(model.modeldata.active_ssid).ps.get('xyz');
+        } catch (ex) {
             return;
         }
+        const pgonTextShapes = [];
+        for (let i = 0; i < pgon_label.length; i ++) {
+            if (!pgon_label[i]) { continue; }
+            const posi = model.modeldata.geom.nav.navAnyToPosi(GICommon.EEntType.PGON, pgon[i]);
+            if (posi.length > 3 || !pgon_label[i].text) { continue; }
 
-        const matLite = new THREE.MeshBasicMaterial( {
-            transparent: false,
-            side: THREE.DoubleSide,
-            vertexColors: THREE.VertexColors
-        } );
-        const shapes = [];
+            const labelText = pgon_label[i].text;
+            const labelSize = pgon_label[i].size || 20;
 
-        const fromVec = new THREE.Vector3(0, 0, 1);
-        const checkVecFrom = new THREE.Vector3(1, 0, 0);
-
-        for (const label of labels) {
-            const labelText = label.text;
-            const labelOrient = label.position || label.location;
-            if (!labelText || !labelOrient || !isArray(labelOrient)) { continue; }
-            const labelSize = label.size || 20;
-
-            const shape = this._text_font.generateShapes( labelText, labelSize , 1);
+            const fontType = pgon_label[i].font ? pgon_label[i].font : 'roboto';
+            let fontWeight = 'medium';
+            let fontStyle = 'regular';
+            if (pgon_label[i].font_style) {
+                if (pgon_label[i].font_style.indexOf('light') !== -1) { fontWeight = 'light'; }
+                if (pgon_label[i].font_style.indexOf('bold') !== -1) { fontWeight = 'bold'; }
+                if (pgon_label[i].font_style.indexOf('italic') !== -1) { fontStyle = 'italic'; }
+            }
+            const fontCode = `${fontType}_${fontWeight}_${fontStyle}`;
+            if (!this._text_font[fontCode]) {
+                await this._loadFont(fontCode);
+            }
+            const shape = this._text_font[fontCode].generateShapes( labelText, labelSize);
             const geom = new THREE.ShapeBufferGeometry(shape);
 
-            let labelPos = labelOrient[0];
-
-            if (!isArray(labelPos)) {
-                labelPos = labelOrient;
-            } else {
-                let toVec = new THREE.Vector3(...labelOrient[1]);
-                const pVec2 = new THREE.Vector3(...labelOrient[2]);
-                toVec = toVec.cross(pVec2).normalize();
-
-                if (labelOrient[1][0] !== 0 || labelOrient[1][1] !== 0) {
-                    const checkVecTo = new THREE.Vector3(labelOrient[1][0], labelOrient[1][1], 0).normalize();
-                    const rotateQuat = new THREE.Quaternion();
-                    rotateQuat.setFromUnitVectors(checkVecFrom, checkVecTo);
-                    const rotateMat = new THREE.Matrix4(); // create one and reuse it
-                    rotateMat.makeRotationFromQuaternion(rotateQuat);
-                    geom.applyMatrix(rotateMat);
-                }
-
-                const quaternion = new THREE.Quaternion();
-                quaternion.setFromUnitVectors(fromVec, toVec);
-                const matrix = new THREE.Matrix4(); // create one and reuse it
-                matrix.makeRotationFromQuaternion(quaternion);
-                geom.applyMatrix(matrix);
+            const lengthCheck = [];
+            const coords = <any> posi.map(p => new THREE.Vector3(...coords_attrib.getEntVal(p)));
+            for (let j = 0; j < coords.length; j++) {
+                const p0 = coords[j];
+                const p1 = (j === posi.length - 1) ? coords[0] : coords[j + 1];
+                lengthCheck.push(p0.distanceTo(p1));
             }
-            geom.translate( labelPos[0], labelPos[1], labelPos[2]);
+            if (lengthCheck[1] > lengthCheck[2]) {
+                [lengthCheck[1], lengthCheck[2]] = [lengthCheck[2], lengthCheck[1]];
+                [coords[0], coords[1]] = [coords[1], coords[0]];
+            }
+            if (lengthCheck[0] > lengthCheck[1]) {
+                [lengthCheck[0], lengthCheck[1]] = [lengthCheck[1], lengthCheck[0]];
+                [coords[0], coords[2]] = [coords[2], coords[0]];
+            }
+            if (lengthCheck[1] > lengthCheck[2]) {
+                [lengthCheck[1], lengthCheck[2]] = [lengthCheck[2], lengthCheck[1]];
+                [coords[0], coords[1]] = [coords[1], coords[0]];
+            }
+            const rotQuat = this.rotateQuartenion(coords);
+            geom.applyQuaternion(rotQuat);
+            geom.translate(coords[1].x, coords[1].y, coords[1].z);
 
             let color = new THREE.Color(0);
-            if (label.color  && label.color.length === 3) {
-                color = new THREE.Color(`rgb(${label.color[0]}, ${label.color[1]}, ${label.color[2]})`);
+            if (pgon_label[i].color  && pgon_label[i].color.length === 3) {
+                color = new THREE.Color(`rgb(${pgon_label[i].color[0]}, ${pgon_label[i].color[1]}, ${pgon_label[i].color[2]})`);
             }
-            const colors_buffer = new THREE.Float32BufferAttribute(geom.attributes.position.count * 3, 3);
-            if (label.color && label.color.length === 3) {
-                for (let i = 0; i < colors_buffer.count; i++) {
-                    colors_buffer.setXYZ(i, label.color[0], label.color[1], label.color[2]);
+            const colors_buffer = new THREE.Float32BufferAttribute(new Uint8Array(geom.attributes.position.count * 3), 3);
+            if (pgon_label[i].color && pgon_label[i].color.length === 3) {
+                for (let k = 0; k < colors_buffer.count; k++) {
+                    colors_buffer.setXYZ(k, pgon_label[i].color[0], pgon_label[i].color[1], pgon_label[i].color[2]);
                 }
             }
             geom.setAttribute('color', colors_buffer);
-            shapes.push(geom);
+            pgonTextShapes.push(geom);
         }
-        if (shapes.length === 0) { return; }
-        const mergedGeom = BufferGeometryUtils.mergeBufferGeometries(shapes);
-        const text = new THREE.Mesh(mergedGeom , matLite);
-        this.scene.add(text);
+        if (pgonTextShapes.length === 0) { return; }
+        const pgonMergedGeom = mergeBufferGeometries(pgonTextShapes);
+        const pgonText = new THREE.Mesh(pgonMergedGeom , new THREE.MeshBasicMaterial( {
+            transparent: false,
+            side: THREE.DoubleSide,
+            vertexColors: true
+        }));
+        this.scene.add(pgonText);
         // this.renderer.render(this.scene, this.camera);
         this.renderer.render(this.scene, this.camera);
+    }
+
+    rotateQuartenion(targetCoords: [THREE.Vector3, THREE.Vector3, THREE.Vector3]): THREE.Quaternion {
+        const v1y = new THREE.Vector3(0, 1, 0);
+        const v2x = new THREE.Vector3().copy(targetCoords[2]).sub(targetCoords[1]).normalize();
+        const v2y = new THREE.Vector3().copy(targetCoords[0]).sub(targetCoords[1]).normalize();
+        const n1 = new THREE.Vector3(0, 0, 1);
+        const n2 = v2x.cross(v2y);
+        const quat1 = new THREE.Quaternion().setFromUnitVectors(n1, n2);
+        const quat2 = new THREE.Quaternion().setFromUnitVectors(v1y.applyQuaternion(quat1), v2y);
+        const QuatFinal = quat2.multiply(quat1);
+        return QuatFinal;
     }
 
 
@@ -707,7 +731,6 @@ export class DataThreejs extends DataThreejsLookAt {
         size: number = 1): void {
         const geom = new THREE.BufferGeometry();
         geom.setIndex(points_i);
-        // geom.addAttribute('position', posis_buffer);
         geom.setAttribute('position', posis_buffer);
         // this._buffer_geoms.push(geom);
         // geom.computeBoundingSphere();
@@ -715,7 +738,7 @@ export class DataThreejs extends DataThreejsLookAt {
             color: new THREE.Color(parseInt(color.replace('#', '0x'), 16)),
             size: size,
             sizeAttenuation: false
-            // vertexColors: THREE.VertexColors
+            // vertexColors: true
         });
         const point = new THREE.Points(geom, mat);
         this.scene_objs.push(point);
@@ -982,129 +1005,14 @@ export class DataThreejs extends DataThreejsLookAt {
         }, options );
     }
 
-
-    // ============================================================================
-    // ============================================================================
-    // Some old stuff
-    // ============================================================================
-    // ============================================================================
-
-    // public disposeWebGL() {
-    //     console.log('this._renderer.info', this._renderer.info.memory.geometries);
-    //     this.sceneObjs.forEach(obj => {
-    //         if (obj['dispose']) { obj['dispose'](); }
-    //         this._scene.remove(obj);
-    //     });
-    //     const BufferGeoms = this.BufferGeoms;
-    //     BufferGeoms.forEach(geom => {
-    //         geom.dispose();
-    //     });
-    //     this.BufferGeoms = [];
-    //     console.log('this._renderer.info', this._renderer.info.memory.geometries);
-    // }
-
-    // private cameraLookat(center, radius = 100) {
-    //     const fov = this._camera.fov * (Math.PI / 180);
-    //     const vec_centre_to_pos: THREE.Vector3 = new THREE.Vector3();
-    //     vec_centre_to_pos.subVectors(this._camera.position, vec_centre_to_pos);
-    //     const tmp_vec = new THREE.Vector3(Math.abs(radius / Math.sin(fov / 2)),
-    //         Math.abs(radius / Math.sin(fov / 2)),
-    //         Math.abs(radius / Math.sin(fov / 2)));
-    //     vec_centre_to_pos.setLength(tmp_vec.length());
-    //     const perspectiveNewPos: THREE.Vector3 = new THREE.Vector3();
-    //     perspectiveNewPos.addVectors(center, vec_centre_to_pos);
-    //     const newLookAt = this._camera.getWorldDirection(center);
-    //     // this._camera.position.copy(perspectiveNewPos);
-    //     this._camera.lookAt(newLookAt);
-    //     this._camera.updateProjectionMatrix();
-    //     this._controls.target.set(center.x, center.y, center.z);
-    //     this._controls.update();
-    //     const textLabels = this._textLabels;
-    //     if (textLabels.size !== 0) {
-    //         textLabels.forEach((label) => {
-    //             label.updatePosition();
-    //         });
-    //     }
-    // }
-
-    // public DLMapSize(size = null): void {
-    //     let _size;
-    //     if (size) {
-    //         _size = 1024 * size;
-    //     } else {
-    //         _size = 8192;
-    //     }
-    //     if (this.directional_light) {
-    //         this.directional_light.shadow.mapSize.width = _size;
-    //         this.directional_light.shadow.mapSize.width = _size;
-    //     }
-    //     // this._renderer.render(this._scene, this._camera);
-    // }
-
-    // public onWindowKeyPress(event: KeyboardEvent): boolean {
-    //     const nodeName = (<Element>event.target).nodeName;
-    //     if (nodeName === 'TEXTAREA' || nodeName === 'INPUT') { return false; }
-    //     const segment_str = window.location.pathname;
-    //     const segment_array = segment_str.split('/');
-    //     const last_segment = segment_array[segment_array.length - 1];
-    //     if (last_segment === 'editor') {
-    //         return false;
-    //     }
-    //     if (event.ctrlKey || event.metaKey) {
-    //         return false;
-    //     }
-    //     const keyCode = event.which;
-    //     // console.log(keyCode);
-    //     const positionDelta = 10;
-    //     const rotationDelta = 0.02;
-    //     const xp = this._camera.position.x;
-    //     const yp = this._camera.position.y;
-    //     switch (keyCode) {
-    //         case 65: // A: move left
-    //             this._camera.position.x -= positionDelta;
-    //             break;
-    //         case 68: // D: move right
-    //             this._camera.position.x += positionDelta;
-    //             break;
-    //         case 87: // W: move forward
-    //             this._camera.position.y += positionDelta;
-    //             break;
-    //         case 83: // S: move backward
-    //             this._camera.position.y -= positionDelta;
-    //             break;
-    //         case 90: // Z: move up
-    //             this._camera.position.z += positionDelta;
-    //             break;
-    //         case 88: // X: move down
-    //             this._camera.position.z -= positionDelta;
-    //             break;
-    //         case 81: // Q: rotate clockwise
-    //             this._camera.position.x = xp * Math.cos(rotationDelta) + yp * Math.sin(rotationDelta);
-    //             this._camera.position.y = yp * Math.cos(rotationDelta) - xp * Math.sin(rotationDelta);
-    //             this._camera.lookAt(this._scene.position);
-    //             break;
-    //         case 69: // E: rotate anticlockwise
-    //             this._camera.position.x = xp * Math.cos(rotationDelta) - yp * Math.sin(rotationDelta);
-    //             this._camera.position.y = yp * Math.cos(rotationDelta) + xp * Math.sin(rotationDelta);
-    //             this._camera.lookAt(this._scene.position);
-    //             break;
-    //         case 84: // T
-    //             this._camera.rotation.x += rotationDelta;
-    //             break;
-    //         case 71: // G
-    //             this._camera.rotation.x -= rotationDelta;
-    //             break;
-    //         case 70: // F
-    //             this._camera.rotation.y += rotationDelta;
-    //             break;
-    //         case 72: // H
-    //             this._camera.rotation.y -= rotationDelta;
-    //             break;
-    //         default:
-    //             break;
-    //     }
-    //     return true;
-    // }
-
+    private async _loadFont(fontCode) {
+        const p = new Promise<void>(resolve => {
+            textFontLoader.load( `assets/fonts/${fontCode}.json`, font => {
+                this._text_font[fontCode] = font;
+                resolve();
+            });
+        });
+        await p;
+    }
 }
 

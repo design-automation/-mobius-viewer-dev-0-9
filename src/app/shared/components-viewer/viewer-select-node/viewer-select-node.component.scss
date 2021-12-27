@@ -1,0 +1,47 @@
+@import '~scss/colors';
+@import '~scss/header-button';
+
+#viewer-select-node-div {
+    .nodeSelect_slider{
+        z-index: 5;
+        background: rgba(255,255,255,0.3);
+        padding: 10px 25px 10px 10px;
+        color: $color1;
+    
+        datalist {
+            width: 121%;
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+        }
+        
+        datalist option {
+            width: 15px;
+            padding: none;
+            flex-grow: 1;
+            right: 1px;
+        }
+    }
+    .nodeSelect_dropdown{
+        z-index: 5;
+        padding: 10px;
+        color: $color1;
+    
+        datalist {
+            width: 121%;
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+        }
+        
+        datalist option {
+            width: 15px;
+            padding: none;
+            flex-grow: 1;
+            right: 1px;
+        }
+    }
+    
+}

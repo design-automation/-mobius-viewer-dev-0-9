@@ -1,0 +1,49 @@
+{
+    "data": [
+        { "name": "icon_print_disabled", "url": "assets/Icons/Print_disabled.svg"},
+        { "name": "icon_print", "url": "assets/Icons/iconPrint.svg"},
+        { "name": "icon_disabled", "url": "assets/Icons/iconDisabled.svg"},
+        { "name": "icon_settings", "url": "assets/Icons/Settings.svg"},
+        { "name": "icon_select", "url": "assets/Icons/Select.svg"},
+        { "name": "icon_terminate", "url": "assets/Icons/Terminate.svg"},
+
+        { "name": "icon_CAD Viewer", "url": "assets/Icons/3D2.svg"},
+        { "name": "icon_Geo Viewer", "url": "assets/Icons/location_searching.svg"},
+        { "name": "icon_VR Viewer", "url": "assets/Icons/panorama_horizontal.svg"},
+        { "name": "icon_Console", "url": "assets/Icons/Console.svg"},
+        { "name": "icon_Documentation", "url": "assets/Icons/doc.svg"},
+
+        { "name": "icon_home", "url": "assets/Icons/Home.svg"},
+        { "name": "icon_gallery", "url": "assets/Icons/view_comfy_black_24dp.svg"},
+        { "name": "icon_dashboard", "url": "assets/Icons/Dashboard.svg"},
+        { "name": "icon_flowchart", "url": "assets/Icons/Flowchart.svg"},
+        { "name": "icon_editor", "url": "assets/Icons/Node.svg"},
+
+        { "name": "icon_block", "url": "assets/Icons/block_black_24dp.svg"},
+        { "name": "icon_play", "url": "assets/Icons/play_circle_outline_black_24dp.svg"},
+        { "name": "icon_menu", "url": "assets/Icons/menu_black_24dp.svg"},
+        { "name": "icon_rotate_left", "url": "assets/Icons/rotate_left_black_24dp.svg"},
+        { "name": "icon_launch", "url": "assets/Icons/launch_black_24dp.svg"},
+        { "name": "icon_share", "url": "assets/Icons/share_black_24dp.svg"},
+        { "name": "icon_chevron_left", "url": "assets/Icons/chevron_left_black_24dp.svg"},
+        { "name": "icon_expand_more", "url": "assets/Icons/expand_more_black_24dp.svg"},
+
+        { "name": "icon_save_alt", "url": "assets/Icons/save_alt_black_24dp.svg"},
+        { "name": "icon_input", "url": "assets/Icons/input_black_24dp.svg"},
+        { "name": "icon_save", "url": "assets/Icons/save_black_24dp.svg"},
+        { "name": "icon_play_for_work", "url": "assets/Icons/play_for_work_black_24dp.svg"},
+        { "name": "icon_autorenew", "url": "assets/Icons/autorenew_black_24dp.svg"},
+        { "name": "icon_link", "url": "assets/Icons/link_black_24dp.svg"},
+        
+        { "name": "icon_summary", "url": "assets/Icons/Summary.svg"},
+        { "name": "icon_zoom", "url": "assets/Icons/Zoom.svg"},
+        { "name": "icon_mobius_favicon", "url": "assets/Icons/Mobius favicon.svg"},
+        { "name": "icon_add", "url": "assets/Icons/add.svg"},
+        { "name": "icon_remove", "url": "assets/Icons/remove.svg"},
+        { "name": "icon_credits", "url": "assets/Icons/Credits.svg"},
+        { "name": "icon_up_arrow", "url": "assets/Icons/arrowup.svg"},
+        { "name": "icon_dn_arrow", "url": "assets/Icons/arrowdown.svg"},
+        { "name": "icon_ctrl_cam", "url": "assets/Icons/ControlCam.svg"},
+        { "name": "icon_help", "url": "assets/Icons/Help.svg"}
+    ]
+}

@@ -14,7 +14,8 @@ import { DragDirective } from './directives/dragDropDirective';
 import { MatIconModule } from '@angular/material/icon';
 import { VIEWER_ARR, VIEWER_MOD } from './model-viewers.config';
 import { SpinnerComponent } from './spinner/spinner.component';
-// import { DataCesiumService } from './gi-cesium-viewer/data/data.cesium.service';
+import { DataGeoService } from './gi-geo-viewer/data/data.geo.service';
+import { DataAframeService } from './aframe-viewer/data/data.aframe.service';
 
 @NgModule({
   declarations: [
@@ -33,7 +34,15 @@ import { SpinnerComponent } from './spinner/spinner.component';
     SpinnerComponent,
     ...VIEWER_ARR
   ],
-  providers: [ GIDataService, DataService ],
+  providers: [ GIDataService, DataGeoService, DataAframeService, DataService ],
   bootstrap: [ AppComponent ]
 })
-export class AppModule { }
+export class AppModule {
+    /**
+     * constructor
+     */
+    constructor () {
+        // Do nothing
+    }
+}
+

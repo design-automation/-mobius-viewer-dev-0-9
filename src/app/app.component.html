@@ -4,7 +4,7 @@
         <div class="header-btn-group">
             <button class='btn' mat-icon-button *ngFor='let view of Viewers;' id='{{view.name}}'
             [class.active]='view.name == activeView.name' (click)='updateView(view)' title='{{view.name}}'>
-                <mat-icon [svgIcon]='"c"+view.name'></mat-icon>
+                <mat-icon [svgIcon]='"icon_"+view.name'></mat-icon>
             </button>
         </div>
     </div>

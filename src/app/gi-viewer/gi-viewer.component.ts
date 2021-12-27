@@ -1,4 +1,4 @@
-import { GIModel } from '@libs/geo-info/GIModel';
+import { Model } from '@design-automation/mobius-sim-funcs';
 import { ViewChild, HostListener, OnDestroy } from '@angular/core';
 import { DefaultSettings, SettingsColorMap, Locale } from './gi-viewer.settings';
 // import @angular stuff
@@ -6,12 +6,13 @@ import { Component, Input, OnInit } from '@angular/core';
 // import app services
 import { DataService } from './data/data.service';
 import { DataService as MD } from '@services';
-import { ModalService } from './html/modal-window.service';
 import { ColorPickerService } from 'ngx-color-picker';
 import { ThreejsViewerComponent } from './threejs/threejs-viewer.component';
 import { Vector3, GridHelper } from 'three';
 import { SplitComponent } from 'angular-split';
 import { ISettings } from './data/data.threejsSettings';
+import { ModalService } from '@shared/services/modal-window.service';
+
 // import others
 // import { ThreejsViewerComponent } from './threejs/threejs-viewer.component';
 
@@ -26,7 +27,7 @@ import { ISettings } from './data/data.threejsSettings';
 })
 export class GIViewerComponent implements OnInit, OnDestroy {
     // model data passed to the viewer
-    @Input() data: GIModel;
+    @Input() data: Model;
     @Input() nodeIndex: number;
 
     settings: ISettings = DefaultSettings;
@@ -109,13 +110,14 @@ export class GIViewerComponent implements OnInit, OnDestroy {
         localStorage.setItem('mpm_default_settings', JSON.stringify(DefaultSettings));
         this.temp_camera_pos = this.dataService.getThreejsScene().perspCam.position;
 
-        this.settingsUpdateInterval = setInterval(() => {
-            if (this.mainDataService.viewerSettingsUpdated) {
-                this.settings = JSON.parse(localStorage.getItem('mpm_settings'));
-                this.closeModal('settings_modal', true);
-                this.mainDataService.viewerSettingsUpdated = false;
-            }
-        }, 100);
+        // this.settingsUpdateInterval = setInterval(() => {
+        //     if (this.mainDataService.giViewerSettingsUpdated) {
+        //         this.settings = JSON.parse(localStorage.getItem('mpm_settings'));
+        //         this.dataService.getThreejsScene().settings = this.settings;
+        //         this.threejs.updateModel(this.data);
+        //         this.mainDataService.giViewerSettingsUpdated = false;
+        //     }
+        // }, 100);
     }
 
     ngOnDestroy() {
@@ -130,13 +132,6 @@ export class GIViewerComponent implements OnInit, OnDestroy {
     }
 
     threejsAction(action: {'type': string, 'event': any}) {
-        // <threejs-viewer [model]='data'
-        // (eventClicked)="childEventClicked($event)"
-        // [attr_table_select]='attrTableSelect'
-        // [selectSwitch] = 'selectSwitchOnOff'
-        // [attribLabel] = 'attribLabelVal'
-        // (resetTableEvent) = "resetTable()"
-        // ></threejs-viewer>
         if (action.type === 'resetTableEvent') {
             this.resetTable();
         } else if (action.type === 'eventClicked') {
@@ -162,6 +157,11 @@ export class GIViewerComponent implements OnInit, OnDestroy {
 
     resetTable() {
         this.attrTableReset = Date.now();
+    }
+
+    openViewerHelp() {
+        this.mainDataService.helpView = '...cadviewer/cad-viewer';
+        this.mainDataService.toggleHelp(true);
     }
 
     openModal(id: string) {
@@ -242,29 +242,24 @@ export class GIViewerComponent implements OnInit, OnDestroy {
                 this.temp_grid_pos = this.dataService.getThreejsScene().getGridPos();
                 if (this.temp_grid_pos) {
                     this.settings.grid.pos = this.temp_grid_pos;
-                    this.settings.grid.pos_x = this.temp_grid_pos.x;
-                    this.settings.grid.pos_y = this.temp_grid_pos.y;
                 }
                 break;
             case 'grid.update_pos_x':
                 if (isNaN(value)) {
                     return;
                 }
-                this.settings.grid.pos_x = Number(value);
                 this.settings.grid.pos.x = Number(value);
                 break;
             case 'grid.update_pos_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.settings.grid.pos_y = Number(value);
                 this.settings.grid.pos.y = Number(value);
                 break;
             case 'grid.update_pos_z':
                 if (isNaN(value)) {
                     return;
                 }
-                this.settings.grid.pos_z = Number(value);
                 this.settings.grid.pos.z = Number(value);
                 break;
             case 'positions.show':
@@ -343,7 +338,9 @@ export class GIViewerComponent implements OnInit, OnDestroy {
                 break;
             case 'ambient_light.intensity':
                 this.settings.ambient_light.intensity = Number(value);
-                scene.ambient_light.intensity = this.settings.ambient_light.intensity;
+                if (scene.ambient_light) {
+                    scene.ambient_light.intensity = this.settings.ambient_light.intensity;
+                }
                 break;
             case 'hemisphere_light.show': // Hemisphere Light
                 this.settings.hemisphere_light.show = !this.settings.hemisphere_light.show;
@@ -356,7 +353,9 @@ export class GIViewerComponent implements OnInit, OnDestroy {
                 break;
             case 'hemisphere_light.intensity':
                 this.settings.hemisphere_light.intensity = Number(value);
-                scene.hemisphere_light.intensity = this.settings.hemisphere_light.intensity;
+                if (scene.hemisphere_light) {
+                    scene.hemisphere_light.intensity = this.settings.hemisphere_light.intensity;
+                }
                 break;
             case 'directional_light.show': // Directional Light
                 this.settings.directional_light.show = !this.settings.directional_light.show;
@@ -384,7 +383,9 @@ export class GIViewerComponent implements OnInit, OnDestroy {
                 break;
             case 'directional_light.intensity':
                 this.settings.directional_light.intensity = Number(value);
-                scene.directional_light.intensity = this.settings.directional_light.intensity;
+                if (scene.directional_light) {
+                    scene.directional_light.intensity = this.settings.directional_light.intensity;
+                }
                 break;
             case 'directional_light.shadow':
                 this.settings.directional_light.shadow = !this.settings.directional_light.shadow;
@@ -463,8 +464,7 @@ export class GIViewerComponent implements OnInit, OnDestroy {
     // }
 
     resetToDefault() {
-        const default_settings = JSON.parse(localStorage.getItem('mpm_default_settings'));
-        this.settings = default_settings;
+        this.settings = JSON.parse(JSON.stringify(DefaultSettings));
     }
 
     checkColor(color) {

@@ -19,12 +19,9 @@ import { AttributeComponent } from './attribute/attribute.component';
 
 import { ATabComponent } from './attribute/tab.component';
 import { ATabsComponent } from './attribute/tabs.component';
-import { TabComponent } from './html/tab.component';
-import { TabsComponent } from './html/tabs.component';
-import { DropdownMenuComponent } from './html/dropdown-menu.component';
-import { ModalWindowComponent } from './html/modal-window.component';
-import { ModalService } from './html/modal-window.service';
 import { ThreeJSViewerService } from './threejs/threejs-viewer.service';
+import { SharedViewerModule } from '@shared/shared-viewer.module';
+import { ModalService } from '@shared/services/modal-window.service';
 
 /**
  * GIViewer
@@ -37,10 +34,6 @@ import { ThreeJSViewerService } from './threejs/threejs-viewer.service';
         AttributeComponent,
         ATabComponent,
         ATabsComponent,
-        TabComponent,
-        TabsComponent,
-        DropdownMenuComponent,
-        ModalWindowComponent
     ],
     exports: [
         GIViewerComponent
@@ -55,7 +48,8 @@ import { ThreeJSViewerService } from './threejs/threejs-viewer.service';
         MatTooltipModule,
         AttributeModule,
         FormsModule,
-        ColorPickerModule
+        ColorPickerModule,
+        SharedViewerModule
     ],
     providers: [
         ModalService,
@@ -63,7 +57,7 @@ import { ThreeJSViewerService } from './threejs/threejs-viewer.service';
     ]
 })
 export class GIViewerModule {
-     static forRoot(): ModuleWithProviders {
+     static forRoot(): ModuleWithProviders<GIViewerModule> {
         return {
             ngModule: GIViewerModule
         };

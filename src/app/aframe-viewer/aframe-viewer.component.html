@@ -1,0 +1,379 @@
+<div id="gi-viewer-container">
+    <aframe-main [model]="data" [nodeIndex]="nodeIndex" (eventAction)='onEventAction($event)'></aframe-main>
+    <button class='btn' id="settings_button" mat-icon-button (click)="openModal('aframe_settings_modal')" title="Settings"><mat-icon svgIcon='icon_settings'></mat-icon></button>
+    <button class='btn' id="aframe_viewer_help_button" mat-icon-button (click)="openViewerHelp()" title="Help"><mat-icon svgIcon='icon_help'></mat-icon></button>
+    <button id="zoomingfit" mat-icon-button (click)="zoomfit()" title='Zoom to Fit Model'>
+        <mat-icon svgIcon="icon_zoom"></mat-icon>
+    </button>
+    <div id='aframe-cameraUpdateData' class='hiddenElm'>
+        <input id='aframe-posUpdate'/>
+        <input id='aframe-posData'/>
+        <input id='aframe-lookUpdate'/>
+        <input id='aframe-lookData'/>
+        <input id='aframe-disablePosUpdate'/>
+    </div>
+
+    <div class='position-picker' *ngIf='showCamPosList'>
+        <select id='selCamPosEl' value={{selectedCamPos}} (change)="changePos($event.target.value)">
+            <option *ngFor="let item of camPosList; let i = index;" value ={{i}}>{{item.name}}</option>
+        </select>
+    </div>
+    <div class='cam-info' *ngIf='settings.camera.show_cam_info'>
+        <p>Rotation: {{current_camera_rot}} Position: {{current_camera_pos}}</p>
+    </div>
+    <modal-window id="aframe_settings_modal" (closeModal) = 'onCloseModal()'>
+        <h1>VR Viewer Settings</h1>
+        <tabs id="settingsTab">
+            <tab tabTitle="Scene">
+                <div class="mat-elevation-z1">
+                    <dl>
+                        <dd>
+                            <div class="label">Background</div>
+                            <select value={{settings.background.background_set}}
+                            (change)="settingOnChange('background.set', $event.target.value)">
+                                <option value=1>Sky 1</option>
+                                <option value=2>Sky 2</option>
+                                <option value=3>Sky 3</option>
+                                <!-- <option value=0>Other</option> -->
+                            </select>
+                        </dd>
+                        <!-- <ng-container *ngIf='settings.background.background_set==0'>
+                            <dd>
+                                <textarea class="tArea" [(ngModel)]='settings.background.background_url'></textarea>
+                            </dd>
+                            <dd class='vector_input_div'>
+                                <div class="label">Background Rotation</div>
+                                <input type="number"
+                                (change)="settingOnChange('background.rotation', $event.target.value)" 
+                                [value]="formatNumber(settings.background.background_rotation)">
+                            </dd>
+                        </ng-container> -->
+                        <dd><hr></dd>
+                        <dd>
+                            <div class="label">Show Camera Info</div>
+                            <div class="onoffswitch">
+                                <input type="checkbox"
+                                name="onoffswitch"
+                                class="onoffswitch-checkbox"
+                                id="aframeShowCamInfo"
+                                [checked]='settings.camera.show_cam_info'
+                                (change)="settingOnChange('camera.show_cam_info')"
+                                >
+                                <label class="onoffswitch-label" for="aframeShowCamInfo">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </dd>
+                        <br>
+                        <dd>
+                            <div class="label">Camera Acceleration</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="1000" step="1" [value]="settings.camera.acceleration" class="slider" (input)="settingOnChange('camera.acceleration', $event.target.value)">
+                                <input type="number"
+                                (change)="settingOnChange('camera.acceleration', $event.target.value)" 
+                                [value]="formatNumber(settings.camera.acceleration)">
+                            </div>
+                        </dd>
+                        <br>
+                        <dd class='vector_input_div'>
+                            <div class="label">Camera Position</div>
+                            <input type="number"
+                            (change)="settingOnChange('camera.pos_x', $event.target.value)" 
+                            [value]="formatNumber(settings.camera.position.x)">
+                            <input type="number"
+                            (change)="settingOnChange('camera.pos_z', $event.target.value)" 
+                            [value]="formatNumber(settings.camera.position.z)">
+                            <input type="number"
+                            (change)="settingOnChange('camera.pos_y', $event.target.value)" 
+                            [value]="formatNumber(settings.camera.position.y)">
+                            <button (click)="getPosition('camera.pos');" class='filebtn getbtn'>Get</button>
+                        </dd>
+                        <dd class='vector_input_div'>
+                            <div class="label">Camera Rotation</div>
+                            <input type="number"
+                            (change)="settingOnChange('camera.rot_x', $event.target.value)" 
+                            [value]="formatNumber(settings.camera.rotation.x)" disabled>
+                            <input type="number" 
+                            (change)="settingOnChange('camera.rot_y', $event.target.value)"
+                            [value]="formatNumber(settings.camera.rotation.y)" disabled>
+                            <button (click)="getPosition('camera.rot');" class='filebtn getbtn'>Get</button>
+                        </dd>
+                    </dl>
+                </div>
+            </tab>
+            <!-- <tab tabTitle="VR" >
+                <div class="mat-elevation-z1">
+                    <dl>
+                        <dd>
+                            <div class="label">VR Background URL</div>
+                        </dd>
+                        <dd>
+                            <textarea class="tArea" [(ngModel)]='vr.background_url'></textarea>
+                        </dd>
+                        <dd>
+                            <div class="label">VR Background Rotation</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="360" step="1" [value]="vr.background_rotation" class="slider" (input)="settingOnChange('vr.background_rotation', $event.target.value)">
+                                <input type="number"
+                                (change)="settingOnChange('vr.background_rotation', $event.target.value)" 
+                                [value]="formatNumber(vr.background_rotation)">
+                            </div>
+                            <br/>
+                        </dd>
+                        <dd><hr></dd>
+                        <dd>
+                            <div class="label">VR Foreground URL</div>
+                        </dd>
+                        <dd>
+                            <textarea class="tArea" [(ngModel)]='vr.foreground_url'></textarea>
+                        </dd>
+                        <dd>
+                            <div class="label">VR Foreground Rotation</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="360" step="1" [value]="vr.foreground_rotation" class="slider" (input)="settingOnChange('vr.foreground_rotation', $event.target.value)">
+                                <input type="number"
+                                (change)="settingOnChange('vr.foreground_rotation', $event.target.value)" 
+                                [value]="formatNumber(vr.foreground_rotation)">
+                            </div>
+                            <br/>
+                        </dd>
+                        <dd><hr></dd>
+                        <dd class='vector_input_div'>
+                            <div class="label">VR Camera Position</div>
+                            <input type="number"
+                            (change)="settingOnChange('vr.camera.pos_x', $event.target.value)" 
+                            [value]="formatNumber(vr.camera_position.x)">
+                            <input type="number"
+                            (change)="settingOnChange('vr.camera.pos_z', $event.target.value)" 
+                            [value]="formatNumber(vr.camera_position.z)">
+                            <input type="number"
+                            (change)="settingOnChange('vr.camera.pos_y', $event.target.value)" 
+                            [value]="formatNumber(vr.camera_position.y)">
+                        </dd>
+                        <dd class='vector_input_div'>
+                            <div class="label">VR Camera Rotation</div>
+                            <input type="number"
+                            (change)="settingOnChange('vr.camera.rot_x', $event.target.value)" 
+                            [value]="formatNumber(vr.camera_rotation.x)" disabled>
+                            <input type="number" 
+                            (change)="settingOnChange('vr.camera.rot_y', $event.target.value)"
+                            [value]="formatNumber(vr.camera_rotation.y)" disabled>
+                        </dd>
+                        <dd><hr></dd>
+                        <dd>
+                            <button (click)="addVRProcedure();" class='closebtn'>Add VR View-point</button>
+                        </dd>
+                    </dl>
+                </div>
+            </tab> -->
+            <tab tabTitle="Light & Shadow">
+                <div class="mat-elevation-z1">
+                    <dl>
+                        <dd>
+                            <div class="label">Ambient Light</div>
+                            <div class="onoffswitch">
+                                <input type="checkbox"
+                                name="onoffswitch"
+                                class="onoffswitch-checkbox"
+                                id="aframeAmbientOnOff"
+                                [checked]='settings.ambient_light.show'
+                                (change)="settingOnChange('ambient_light.show')"
+                                >
+                                <label class="onoffswitch-label" for="aframeAmbientOnOff">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </dd>
+                        <dd class='colors'>
+                            <div class="label">Color</div>
+                            <input
+                            [(colorPicker)]="settings.ambient_light.color"
+                            [style.background]="settings.ambient_light.color"
+                            [value]="settings.ambient_light.color"
+                            [class.light] = "checkColor(settings.ambient_light.color)"
+                            />
+                            <!-- <button (click)="resetDefault('ambient_light.color','#FFFFFF');" class='filebtn closebtn'>Default</button> -->
+                        </dd>
+                        <dd>
+                            <div class="label">Intensity</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="1" step="0.01" [value]="settings.ambient_light.intensity" class="slider" (input)="settingOnChange('ambient_light.intensity', $event.target.value)">
+                                <input type="text" [value]="settings.ambient_light.intensity" disabled>
+                            </div>
+                        </dd>
+                        <dd><hr></dd>
+                        <dd>
+                            <div class="label">Hemisphere Light</div>
+                            <div class="onoffswitch">
+                                <input type="checkbox"
+                                name="onoffswitch"
+                                class="onoffswitch-checkbox"
+                                id="aframeHemisphereOnOff"
+                                [checked]='settings.hemisphere_light.show'
+                                (change)="settingOnChange('hemisphere_light.show')"
+                                >
+                                <label class="onoffswitch-label" for="aframeHemisphereOnOff">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </dd>
+                        <dd class='colors'>
+                            <div class="label">Sky Color</div>
+                            <input
+                            [(colorPicker)]="settings.hemisphere_light.skyColor"
+                            [style.background]="settings.hemisphere_light.skyColor"
+                            [value]="settings.hemisphere_light.skyColor"
+                            [class.light] = "checkColor(settings.hemisphere_light.skyColor)"
+                            />
+                            <!-- <button (click)="resetDefault('hemisphere_light.skyColor','#FFFFFF');" class='filebtn closebtn'>Default</button> -->
+                        </dd>
+                        <dd class='colors'>
+                            <div class="label">Ground Color</div>
+                            <input
+                            [(colorPicker)]="settings.hemisphere_light.groundColor"
+                            [style.background]="settings.hemisphere_light.groundColor"
+                            [value]="settings.hemisphere_light.groundColor"
+                            [class.light] = "checkColor(settings.hemisphere_light.groundColor)"
+                            />
+                            <!-- <button (click)="resetDefault('hemisphere_light.groundColor','#FFFFFF');" class='filebtn closebtn'>Default</button> -->
+                        </dd>
+                        <dd>
+                            <div class="label">Intensity</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="1" step="0.01" [value]="settings.hemisphere_light.intensity" class="slider" (input)="settingOnChange('hemisphere_light.intensity', $event.target.value)">
+                                <input type="text" [value]="settings.hemisphere_light.intensity" disabled>
+                            </div>
+                        </dd>
+                        <dd><hr></dd>
+                        <dd>
+                            <div class="label" title='directional_light'>Directional Light</div>
+                            <div class="onoffswitch">
+                                <input type="checkbox"
+                                name="onoffswitch"
+                                class="onoffswitch-checkbox"
+                                id="aframeDirectionalOnOff"
+                                [checked]='settings.directional_light.show'
+                                (change)="settingOnChange('directional_light.show')"
+                                >
+                                <label class="onoffswitch-label" for="aframeDirectionalOnOff">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </dd>
+                        <dd class='colors'>
+                            <div class="label">Color</div>
+                            <input
+                            [(colorPicker)]="settings.directional_light.color"
+                            [style.background]="settings.directional_light.color"
+                            [value]="settings.directional_light.color"
+                            [class.light] = "checkColor(settings.directional_light.color)"
+                            />
+                            <!-- <button (click)="resetDefault('directional_light.color','#FFFFFF');" class='filebtn closebtn'>Default</button> -->
+                        </dd>
+                        <dd>
+                            <div class="label">Intensity</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="1" step="0.01" [value]="settings.directional_light.intensity" class="slider" (input)="settingOnChange('directional_light.intensity', $event.target.value)">
+                                <input type="text" [value]="settings.directional_light.intensity" disabled>
+                            </div>
+                        </dd>
+                        <dd>
+                            <div class="label">Shadow Intensity</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="1024" max="5120" step="512" [value]="settings.directional_light.shadowSize" class="slider" (input)="settingOnChange('directional_light.shadowSize', $event.target.value)">
+                                <input type="text" [value]="settings.directional_light.shadowSize" disabled>
+                            </div>
+                        </dd>
+                        <dd>
+                            <div class="label" title='directional_light.azimuth'>Azimuth</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="360" step="1" [value]="settings.directional_light.azimuth" class="slider" (input)="settingOnChange('directional_light.azimuth', $event.target.value)">
+                                <input type="number" disabled [value]="settings.directional_light.azimuth" class="number">
+                            </div>
+                        </dd>
+                        <dd>
+                            <div class="label" title='directional_light.altitude'>Altitude</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="90" step="1" [value]="settings.directional_light.altitude" class="slider" (input)="settingOnChange('directional_light.altitude', $event.target.value)">
+                                <input type="number" disabled [value]="settings.directional_light.altitude" class="number">
+                            </div>
+                        </dd>
+                        <!-- <dd>
+                            <div class="label">Distance</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="100" max="1000" step="10" [value]="settings.directional_light.distance" class="slider" (input)="settingOnChange('directional_light.distance', $event.target.value)">
+                                <input type="text" [value]="settings.directional_light.distance" disabled>
+                            </div>
+                        </dd> -->
+                    </dl>
+                </div>
+            </tab>
+            <tab tabTitle="Environment">
+                <div class="mat-elevation-z1">
+                    <dl>
+                        <dd>
+                            <div class="label">Ground</div>
+                            <div class="onoffswitch">
+                                <input type="checkbox"
+                                name="onoffswitch"
+                                class="onoffswitch-checkbox"
+                                id="aframeGroundOnOff"
+                                [checked]='settings.ground.show'
+                                (change)="settingOnChange('ground.show')"
+                                >
+                                <label class="onoffswitch-label" for="aframeGroundOnOff">
+                                    <span class="onoffswitch-inner"></span>
+                                    <span class="onoffswitch-switch"></span>
+                                </label>
+                            </div>
+                        </dd>
+                        <dd>
+                            <div class="label">Width</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="100000" step="100" [value]="settings.ground.width" class="slider" (input)="settingOnChange('ground.width', $event.target.value)">
+                                <input type="number" [value]="settings.ground.width" min="0" max="100000" class="number" (input)="settingOnChange('ground.width', $event.target.value)">
+                            </div>
+                        </dd>
+                        <dd>
+                            <div class="label">Length</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="100000" step="100" [value]="settings.ground.length" class="slider" (input)="settingOnChange('ground.length', $event.target.value)">
+                                <input type="number" [value]="settings.ground.length" min="0" max="100000" class="number" (input)="settingOnChange('ground.length', $event.target.value)">
+                            </div>
+                        </dd>
+                        <dd>
+                            <div class="label">Height</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="-10" max="10" step="0.1" [value]="settings.ground.height" class="slider" (input)="settingOnChange('ground.height', $event.target.value)">
+                                <input type="number" [value]="settings.ground.height" min="-10" max="10" class="number" (input)="settingOnChange('ground.height', $event.target.value)">
+                            </div>
+                        </dd>
+                        <dd class='colors'>
+                            <div class="label">Color</div>
+                            <input
+                            [(colorPicker)]="settings.ground.color"
+                            [style.background]="settings.ground.color"
+                            [value]="settings.ground.color"
+                            [class.light] = "checkColor(settings.ground.color)"
+                            />
+                        </dd>
+                        <dd>
+                            <div class="label">Shininess</div>
+                            <div class="slidecontainer light">
+                                <input type="range" min="0" max="1" step='0.01' [value]="settings.ground.shininess" class="slider" (input)="settingOnChange('ground.shininess', $event.target.value)">
+                                <input type="number" min="0" max="1" [value]="settings.ground.shininess" class="number" (input)="settingOnChange('ground.shininess', $event.target.value)">
+                            </div>
+                        </dd>
+                    </dl>
+                </div>
+            </tab>
+        </tabs>
+        <button (click)="closeModal('aframe_settings_modal', true);" class="filebtn closebtn setting">Apply</button>
+        <button (click)="closeModal('aframe_settings_modal');" class='filebtn closebtn setting'>Cancel</button>
+        <button (click)="resetToDefault();" class='filebtn closebtn setting' style="float: right;">Default</button>
+    </modal-window>
+</div>

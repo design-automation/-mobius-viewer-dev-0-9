@@ -1,11 +1,16 @@
 import * as THREE from 'three';
-// import * as OrbitControls from 'three-orbit-controls';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import { GIModel } from '@libs/geo-info/GIModel';
+import { Model } from '@design-automation/mobius-sim-funcs';
 import { DataService } from '@services';
 import { ISettings } from './data.threejsSettings';
 // import { WEBVR } from 'three/examples/jsm/vr/WebVR.js';
+import { VertexNormalsHelper } from 'three/examples/jsm/helpers/VertexNormalsHelper';
+
+
+const FONT_TYPES  = ['besley', 'opensans', 'roboto'];
+const FONT_SIZES  = ['light', 'medium', 'bold'];
+const FONT_STYLES = ['regular', 'italic'];
 
 /**
  * ThreejsScene
@@ -32,13 +37,17 @@ export class DataThreejsBase {
     public mouse: THREE.Vector2;
 
     // interaction and selection
-    public tri_select_map: Map<number, number>;
-    public edge_select_map: Map<number, number>;
-    // public white_edge_select_map: Map<number, number>;
-    public point_select_map: Map<number, number>;
+    public select_maps: {
+        _t: Map<number, number>;
+        _e: Map<number, number>;
+        _v: Map<number, number>;
+        pt: Map<number, number>;
+        ps: Map<number, number>;
+
+        _e_vr: Map<number, number>;
+        _t_vr: Map<number, number>;
+    };
     public point_label: any[];
-    public posis_map: Map<number, number>;
-    public vertex_map: Map<number, number>;
 
     public selected_geoms: Map<string, number> = new Map();
     public selected_positions: Map<string, Map<string, number>> = new Map();
@@ -70,7 +79,7 @@ export class DataThreejsBase {
     public groundObj: THREE.Mesh;
 
     // the model to display
-    public model: GIModel;
+    public model: Model;
     public nodeIndex: number;
     public scene_objs: THREE.Object3D[] = [];
     public scene_objs_selected: Map<string, THREE.Object3D> = new Map();
@@ -83,7 +92,7 @@ export class DataThreejsBase {
     public timeline_groups = null;
 
     // Show Normals
-    public vnh: THREE.VertexNormalsHelper;
+    public vnh: VertexNormalsHelper;
 
     // Settings
     public settings: ISettings;
@@ -95,7 +104,7 @@ export class DataThreejsBase {
     // protected _buffer_geoms: THREE.BufferGeometry[] = [];
     protected _all_objs_sphere: THREE.Sphere;
 
-    protected _text_font: THREE.Font;
+    protected _text_font = {};
 
     /**
      * Constructs a new data subscriber.
@@ -106,13 +115,25 @@ export class DataThreejsBase {
             this.settings.directional_light.type = 'directional';
             localStorage.setItem('mpm_settings', JSON.stringify(this.settings));
         }
-        const textFontLoader = new THREE.FontLoader();
-        textFontLoader.load( 'assets/fonts/helvetiker_regular.typeface.json', font => { this._text_font = font; });
+        // const textFontLoader = new THREE.FontLoader();
+        // for (const fontType of FONT_TYPES) {
+        //     for (const fontSize of FONT_SIZES) {
+        //         for (const fontStyle of FONT_STYLES) {
+        //             const fontCode = `${fontType}_${fontSize}_${fontStyle}`;
+        //             textFontLoader.load( `assets/fonts/${fontCode}.json`, font => { this._text_font[fontCode] = font; });
+        //         }
+        //     }
+        // }
 
         // scene
         this.scene = new THREE.Scene();
         // renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, logarithmicDepthBuffer: true });
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true,
+            logarithmicDepthBuffer: true,
+            powerPreference: 'high-performance',
+        });
         this.renderer.autoClear = false;
         // this._renderer.setClearColor(0xcccccc, 0);
         this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -154,6 +175,7 @@ export class DataThreejsBase {
         this.orthoControls.screenSpacePanning = true;
         this.orthoControls.enableRotate = false;
         this.orthoControls.enabled = false;
+        this.orthoControls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
         this.orthoControls.update();
 
         this.camera = this.perspCam;
@@ -170,11 +192,13 @@ export class DataThreejsBase {
 
         setTimeout(() => {
             const threeContainer = document.getElementById('threejs-container');
-            const aspect = (threeContainer.clientWidth / threeContainer.clientHeight + 1) / 2;
-            this.orthoCam.left = aspect * -300;
-            this.orthoCam.right = aspect * 300;
-            this.orthoCam.updateProjectionMatrix();
-            this.orthoControls.update();
+            if (threeContainer) {
+                const aspect = (threeContainer.clientWidth / threeContainer.clientHeight + 1) / 2;
+                this.orthoCam.left = aspect * -300;
+                this.orthoCam.right = aspect * 300;
+                this.orthoCam.updateProjectionMatrix();
+                this.orthoControls.update();
+            }
         }, 0);
     }
 }

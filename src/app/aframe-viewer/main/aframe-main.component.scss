@@ -1,0 +1,34 @@
+@import '~scss/colors';
+@import '~scss/variables';
+
+#aframe-view {
+    position: relative;
+    // padding:50px;
+    height: 100%;
+    width: 100%;
+    margin:0px;
+    overflow: hidden;
+    // color: blue;
+    font-family:sans-serif;
+}
+#aframe-container {
+    position: relative;
+    // padding:50px;
+    height: 100%;
+    width: 100%;
+    margin:0px;
+    overflow: hidden;
+    // color: blue;
+    font-family:sans-serif;
+}
+#aframe_hud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 5px;
+    top: 40px;
+    left: 5px;
+    max-width: 200px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    z-index: 1;
+}

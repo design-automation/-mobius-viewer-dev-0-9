@@ -56,11 +56,63 @@ as-split-area{
     }
 }
 
+#geo_viewer_help_button{
+    z-index: 2;
+    outline: none;
+    width: 40px;
+    height: 30px;
+    font-size:$fsize1;
+    position: absolute;
+    top:0px;
+    right:30px; 
+    text-align:center;
+    color: $color1;
+    background-color:transparent;
+    border:0;
+    cursor: pointer;
+    &:hover {
+        color:$selected-color;
+    }
+}
+
+
 .date-picker-div{
     position: absolute;
-    bottom: 10px;
-    left: 10px;
+    bottom: 0px;
+    left: 0px;
     z-index: 2;
+    width: 50%;
+    display: inline-flex;
+    background-color: rgba(255, 255, 255, 0.5);
+    padding-left: 5px;
+
+    .viewer-time-slider {
+        width: calc(100% - 105px);
+        margin: 7px 5px 7px 5px;
+        height: 10px;
+        overflow: hidden;
+        -webkit-appearance: none;
+        background-color: $color5-5 ;
+        &::-webkit-slider-runnable-track {
+            height: 15px;
+            -webkit-appearance: none;
+            color: $color3;
+            margin-top: -2px;
+        }
+        &::-webkit-slider-thumb {
+            width: 2px;
+            -webkit-appearance: none;
+            height: 15px;
+            cursor: ew-resize;
+            background: $color1;
+            box-shadow: -300px 0 0 300px $color3;
+        }
+    }
+    .viewer-time-box {
+        height: 20px;
+        padding-top: 5px;
+        font-size: 14px;
+    }
 }
 
 
@@ -90,7 +142,7 @@ modal-window {
         line-height: 35px;
     }
     dl{
-        margin: 20px 0;
+        // margin: 20px 0;
         padding: 0;
         background-color: transparent;
         dd{
@@ -188,7 +240,7 @@ body.modal-open {
 }
 
 
-#settings_modal{
+#geo_settings_modal{
     .filebtn.setting{
         margin-top: 20px;
     }
@@ -331,15 +383,15 @@ body.modal-open {
         cursor: help;
     }
 
-    input + input{
-        vertical-align: top;
-        border: none;
-        line-height: 20px;
-        background: transparent;
-        width: 55px;
-        margin-left: 10px !important;
-        height: 14px;
-    }
+    // input + input{
+    //     vertical-align: top;
+    //     border: none;
+    //     line-height: 20px;
+    //     background: transparent;
+    //     width: 55px;
+    //     margin-left: 10px !important;
+    //     height: 14px;
+    // }
 
     .number{
         width: 100px;
@@ -351,15 +403,16 @@ body.modal-open {
         float: left;
     }
 
-    #camera, #camera_target, #grid_pos{
-        input{
-            width: 65px;
-            border: 1px solid #bdbdbd;
-            height: 16px;
-            margin-right: 3px;
-            text-align: right;
-            padding-right: 3px
-        }
+}
+
+#itowns_camera, #itowns_camera_rot, #grid_pos{
+    input{
+        width: 65px;
+        border: 1px solid #bdbdbd;
+        height: 16px;
+        margin-right: 3px;
+        text-align: right;
+        padding-right: 3px
     }
 }
 
@@ -444,3 +497,9 @@ body.modal-open {
     }
   }
 
+.nodeSelect_container {
+    position: absolute;
+    bottom: 20px;
+    right: 0px;
+    z-index: 5;
+}

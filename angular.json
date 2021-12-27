@@ -11,6 +11,20 @@
           "build": {
             "builder": "@angular-devkit/build-angular:browser",
             "options": {
+              "allowedCommonJsDependencies": [
+                "util",
+                "chroma-js",
+                "showdown",
+                "lodash",
+                "mathjs",
+                "seedrandom",
+                "cytoscape",
+                "entities",
+                "fast-xml-parser",
+                "@aws-crypto/crc32",
+                "@aws-crypto/sha256-browser",
+                "@doodle3d/clipper-js"
+              ],
               "outputPath": "dist",
               "index": "src/index.html",
               "main": "src/main.ts",
@@ -18,29 +32,26 @@
               "polyfills": "src/polyfills.ts",
               "assets": [
                 "src/assets",
-                "src/mobius.ico",
-                {
-                  "glob": "**/*",
-                  "input": "./node_modules/cesium/Build/Cesium",
-                  "output": "/assets/cesium"
-                }
+                "src/CNAME",
+                "src/mobius.ico"
               ],
               "styles": [
-                "src/styles.scss",
-                "./node_modules/cesium/Build/Cesium/Widgets/widgets.css"
+                "src/styles.scss"
               ],
-              "scripts": [
-                "./node_modules/cesium/Build/Cesium/Cesium.js"
-              ]
+              "scripts": [],
+              "vendorChunk": false,
+              "extractLicenses": true,
+              "buildOptimizer": true,
+              "sourceMap": true,
+              "optimization": false,
+              "namedChunks": false
             },
             "configurations": {
               "production": {
                 "optimization": false,
                 "outputHashing": "all",
-                "sourceMap": true,
-                "extractCss": true,
+                "sourceMap": false,
                 "namedChunks": false,
-                "aot": true,
                 "extractLicenses": true,
                 "vendorChunk": false,
                 "buildOptimizer": true,
@@ -50,8 +61,19 @@
                     "with": "src/environments/environment.prod.ts"
                   }
                 ]
+              },
+              "development": {
+                "optimization": false,
+                "sourceMap": true,
+                "namedChunks": false,
+                "aot": true,
+                "extractLicenses": false,
+                "vendorChunk": false,
+                "buildOptimizer": false,
+                "budgets": []
               }
-            }
+            },
+            "defaultConfiguration": "development"
           },
           "serve": {
             "builder": "@angular-devkit/build-angular:dev-server",
@@ -61,6 +83,9 @@
             "configurations": {
               "production": {
                 "browserTarget": "mobius-parametric-modeller:build:production"
+              },
+              "development": {
+                "browserTarget": "mobius-parametric-modeller:build:development"
               }
             }
           },
@@ -98,6 +123,10 @@
                 "**/assets/typedoc-json/**"
               ]
             }
+          },
+          "deploy": {
+            "builder": "angular-cli-ghpages:deploy",
+            "options": {}
           }
         }
       },
@@ -131,7 +160,7 @@
     "schematics": {
       "@schematics/angular:component": {
         "prefix": "app",
-        "styleext": "scss"
+        "style": "scss"
       },
       "@schematics/angular:directive": {
         "prefix": "app"

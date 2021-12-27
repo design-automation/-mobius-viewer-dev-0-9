@@ -8,7 +8,8 @@
             [nodeIndex] = 'nodeIndex'
 			(action)="threejsAction($event)"
 			></threejs-viewer>
-			<button class='btn' id="settings_button" mat-icon-button (click)="openModal('settings_modal')" title="Settings"><mat-icon svgIcon="settings"></mat-icon></button>
+			<button class='btn' id="settings_button" mat-icon-button (click)="openModal('settings_modal')" title="Settings"><mat-icon svgIcon='icon_settings'></mat-icon></button>
+			<button class='btn' id="gi_viewer_help_button" mat-icon-button (click)="openViewerHelp()" title="Help"><mat-icon svgIcon='icon_help'></mat-icon></button>
 		</as-split-area>
 		<as-split-area [size]='getSplit()' id="attrib">
 			<attribute [model]="data"
@@ -23,7 +24,7 @@
 		</as-split-area>
 	</as-split>
     <modal-window id="settings_modal" (closeModal) = 'onCloseModal()'>
-        <h1>3D Viewer Settings</h1>
+        <h1>CAD Viewer Settings</h1>
         <tabs id="settingsTab">
             <tab tabTitle="Scene">
                 <div class="mat-elevation-z1">
@@ -201,13 +202,13 @@
                         <dd id='grid_pos'>
                             <div class="label">Grid Position</div>
                             <input type="number"
-                            [value]="formatNumber(settings.grid.pos_x)"
+                            [value]="formatNumber(settings.grid.pos.x)"
                             (change)="settingOnChange('grid.update_pos_x', $event.target.value)">
                             <input type="number"
-                            [value]="formatNumber(settings.grid.pos_y)"
+                            [value]="formatNumber(settings.grid.pos.y)"
                             (change)="settingOnChange('grid.update_pos_y', $event.target.value)">
                             <input type="number"
-                            [value]="formatNumber(settings.grid.pos_z)"
+                            [value]="formatNumber(settings.grid.pos.z)"
                             (change)="settingOnChange('grid.update_pos_z', $event.target.value)">
                             <button (click)="settingOnChange('grid.update_pos')" class="filebtn getbtn">Get</button>
                         </dd>
@@ -567,7 +568,7 @@
                     
                 </div>
             </tab>
-            <tab tabTitle="Entity selection">
+            <tab tabTitle="Selection">
                 <div class="mat-elevation-z1">
                     <dl>
                         <!-- <dd>

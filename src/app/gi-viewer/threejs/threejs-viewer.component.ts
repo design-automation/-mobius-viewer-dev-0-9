@@ -1,4 +1,3 @@
-import { GIModel } from '@libs/geo-info/GIModel';
 // import @angular stuff
 import {
     Component, OnInit, Input, Output, EventEmitter,
@@ -7,13 +6,28 @@ import {
 import { DataThreejs } from '../data/data.threejs';
 // import { IModel } from 'gs-json';
 import { DataService } from '../data/data.service';
-import { EEntType, EEntTypeStr, Txyz } from '@libs/geo-info/common';
-import { DropdownMenuComponent } from '../html/dropdown-menu.component';
-import { ModalService } from '../html/modal-window.service';
+import { DropdownMenuComponent } from '@shared/components-viewer/dropdown-menu/dropdown-menu.component';
+import { ModalService } from '@shared/services/modal-window.service';
 import { ThreeJSViewerService } from './threejs-viewer.service';
-import { sortByKey } from '@libs/util/maps';
+import { Model, GICommon} from '@design-automation/mobius-sim-funcs';
 
 let renderCheck = true;
+function sortByKey(unsortedMap) {
+    const keys = [];
+    const sortedMap = new Map();
+
+    unsortedMap.forEach((value, key) => {
+        keys.push(key);
+    });
+
+    keys.sort((a, b) => {
+        const x = Number(a.substr(2)), y = Number(b.substr(2));
+        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+    }).map(function(key) {
+        sortedMap.set(key, unsortedMap.get(key));
+    });
+    return sortedMap;
+}
 
 /**
  * A threejs viewer for viewing geo-info (GI) models.
@@ -28,7 +42,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     @Output() action = new EventEmitter<{'type': string, 'event': Event}>();
     // @Output() eventClicked = new EventEmitter<Event>();
     // @Output() resetTableEvent = new EventEmitter<number>();
-    @Input() model: GIModel;
+    @Input() model: Model;
     @Input() nodeIndex: number;
     @Input() attr_table_select: { action: string, ent_type: string, id: number | number[] };
     @Input() selectSwitch: Boolean;
@@ -63,24 +77,24 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     public SelectingEntityType: { id: number, name: string };
     public selectDropdownVisible = false;
     public selections = [
-        // { id: EEntType.VERT, name: 'Vertex' },
-        // { id: EEntType.EDGE, name: 'Edges' },
-        // { id: EEntType.WIRE, name: 'Wires' },
-        { id: EEntType.COLL, name: 'Collections' },
-        { id: EEntType.POINT, name: 'Points' },
-        { id: EEntType.PLINE, name: 'Polylines' },
-        { id: EEntType.PGON, name: 'Polygons' },
-        { id: EEntType.POSI, name: 'Positions' },
+        // { id: GICommon.EEntType.VERT, name: 'Vertex' },
+        // { id: GICommon.EEntType.EDGE, name: 'Edges' },
+        // { id: GICommon.EEntType.WIRE, name: 'Wires' },
+        { id: GICommon.EEntType.COLL, name: 'Collections' },
+        { id: GICommon.EEntType.POINT, name: 'Points' },
+        { id: GICommon.EEntType.PLINE, name: 'Polylines' },
+        { id: GICommon.EEntType.PGON, name: 'Polygons' },
+        { id: GICommon.EEntType.POSI, name: 'Positions' },
     ];
     public default_selections = {
-        // _v: { id: EEntType.VERT, name: 'Vertex' },
-        // _e: { id: EEntType.EDGE, name: 'Edges' },
-        // _w: { id: EEntType.WIRE, name: 'Wires' },
-        co: { id: EEntType.COLL, name: 'Collections' },
-        pt: { id: EEntType.POINT, name: 'Points' },
-        pl: { id: EEntType.PLINE, name: 'Polylines' },
-        pg: { id: EEntType.PGON, name: 'Polygons' },
-        ps: { id: EEntType.POSI, name: 'Positions' },
+        // _v: { id: GICommon.EEntType.VERT, name: 'Vertex' },
+        // _e: { id: GICommon.EEntType.EDGE, name: 'Edges' },
+        // _w: { id: GICommon.EEntType.WIRE, name: 'Wires' },
+        co: { id: GICommon.EEntType.COLL, name: 'Collections' },
+        pt: { id: GICommon.EEntType.POINT, name: 'Points' },
+        pl: { id: GICommon.EEntType.PLINE, name: 'Polylines' },
+        pg: { id: GICommon.EEntType.PGON, name: 'Polygons' },
+        ps: { id: GICommon.EEntType.POSI, name: 'Positions' },
     };
 
     public dropdownPosition = { x: 0, y: 0 };
@@ -95,30 +109,52 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     private currentAttribLabel = '';
 
     tab_map = {
-        0: EEntType.POSI,
-        1: EEntType.VERT,
-        2: EEntType.EDGE,
-        3: EEntType.WIRE,
-        // 4: EEntType.FACE,
-        4: EEntType.POINT,
-        5: EEntType.PLINE,
-        6: EEntType.PGON,
-        7: EEntType.COLL,
-        8: EEntType.MOD
+        0: GICommon.EEntType.POSI,
+        1: GICommon.EEntType.POINT,
+        2: GICommon.EEntType.PLINE,
+        3: GICommon.EEntType.PGON,
+        4: GICommon.EEntType.COLL,
+        5: GICommon.EEntType.MOD
     };
 
     tab_rev_map = {
         0: 0,
-        2: 1,
-        3: 2,
-        4: 3,
-        5: 4, // point
-        6: 5, // plines
-        7: 6, // pgons
-        8: 7,
-        9: 8,
-        // 10: 9
+        // 1: 0,
+        // 2: 0,
+        // 3: 0,
+        // 4: 0,
+        5: 1, // point
+        6: 2, // plines
+        7: 3, // pgons
+        8: 4,
+        9: 5
     };
+
+    // tab_map = {
+    //     0: GICommon.EEntType.POSI,
+    //     1: GICommon.EEntType.VERT,
+    //     2: GICommon.EEntType.EDGE,
+    //     3: GICommon.EEntType.WIRE,
+    //     // 4: GICommon.EEntType.FACE,
+    //     4: GICommon.EEntType.POINT,
+    //     5: GICommon.EEntType.PLINE,
+    //     6: GICommon.EEntType.PGON,
+    //     7: GICommon.EEntType.COLL,
+    //     8: GICommon.EEntType.MOD
+    // };
+
+    // tab_rev_map = {
+    //     0: 0,
+    //     2: 1,
+    //     3: 2,
+    //     4: 3,
+    //     5: 4, // point
+    //     6: 5, // plines
+    //     7: 6, // pgons
+    //     8: 7,
+    //     9: 8,
+    //     // 10: 9
+    // };
 
     /**
      * Creates a new viewer,
@@ -325,8 +361,8 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
 
     refreshLabels(ent_type): void {
         if (!this.dataService.selectingEntityType.id && this.dataService.selectingEntityType.id !== 0) { return; }
-        const allLabels = document.getElementsByClassName(`text-label${EEntTypeStr[ent_type]}`);
-        const unSorted = this.dataService.selected_ents.get(EEntTypeStr[ent_type]);
+        const allLabels = document.getElementsByClassName(`text-label${GICommon.EEntTypeStr[ent_type]}`);
+        const unSorted = this.dataService.selected_ents.get(GICommon.EEntTypeStr[ent_type]);
         if (unSorted === undefined) {
             return;
         }
@@ -334,7 +370,6 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         const arr = Array.from(sorted.values());
         const showSelected = JSON.parse(sessionStorage.getItem('mpm_showSelected'));
         const attr_names = this._data_threejs.model.modeldata.attribs.getAttribNames(ent_type);
-
         let attr_name = this.currentAttribLabel, isArr = false, key;
         if (attr_name.match(/\[.*?\]/g)) {
             isArr = true;
@@ -408,7 +443,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         if (attrib.action === 'select') {
             if (!flowchart) {this.unselectAll(); } // If select from Flowchart, don't unselect all.
             switch (attrib.ent_type) {
-                case EEntTypeStr[EEntType.POSI]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.POSI]:
                     if (typeof attrib.id === 'number') {
                         this.selectPositions(attrib.id, null, null, attrib.ent_type + attrib.id);
                     } else {
@@ -417,7 +452,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                case EEntTypeStr[EEntType.VERT]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.VERT]:
                     if (typeof attrib.id === 'number') {
                         this.selectVertex(attrib.id, null, null, attrib.ent_type + attrib.id);
                     } else {
@@ -426,7 +461,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                case EEntTypeStr[EEntType.EDGE]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.EDGE]:
                     if (typeof attrib.id === 'number') {
                         this.selectEdge(attrib.id);
                     } else {
@@ -435,7 +470,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                case EEntTypeStr[EEntType.WIRE]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.WIRE]:
                     if (typeof attrib.id === 'number') {
                         this.selectWire(attrib.id);
                     } else {
@@ -444,7 +479,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                // case EEntTypeStr[EEntType.FACE]:
+                // case GICommon.EEntTypeStr[GICommon.EEntType.FACE]:
                 //     if (typeof attrib.id === 'number') {
                 //         this.selectFace(attrib.id);
                 //     } else {
@@ -453,7 +488,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 //         });
                 //     }
                 //     break;
-                case EEntTypeStr[EEntType.PGON]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.PGON]:
                     if (typeof attrib.id === 'number') {
                         this.selectPGon(attrib.id);
                     } else {
@@ -462,7 +497,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                case EEntTypeStr[EEntType.PLINE]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.PLINE]:
                     if (typeof attrib.id === 'number') {
                         this.selectPLine(attrib.id);
                     } else {
@@ -471,7 +506,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                case EEntTypeStr[EEntType.POINT]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.POINT]:
                     if (typeof attrib.id === 'number') {
                         this.selectPoint(attrib.id);
                     } else {
@@ -480,7 +515,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         });
                     }
                     break;
-                case EEntTypeStr[EEntType.COLL]:
+                case GICommon.EEntTypeStr[GICommon.EEntType.COLL]:
                     if (typeof attrib.id === 'number') {
                         // const coll_parents = this.model.modeldata.geom.query.getCollParents(attrib.id);
                         // if (coll_parents[0] === -1) { // no parent
@@ -508,28 +543,28 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         const _id = object[1];
                         const objEntType = _ent.slice(0, 2);
                         switch (objEntType) {
-                            case EEntTypeStr[EEntType.POSI]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.POSI]:
                                 this.selectPositions(_id, null, null, _ent);
                                 break;
-                            case EEntTypeStr[EEntType.VERT]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.VERT]:
                                 this.selectVertex(_id, null, null, _ent);
                                 break;
-                            case EEntTypeStr[EEntType.EDGE]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.EDGE]:
                                 this.selectEdge(_id);
                                 break;
-                            case EEntTypeStr[EEntType.WIRE]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.WIRE]:
                                 this.selectWire(_id);
                                 break;
-                            case EEntTypeStr[EEntType.PGON]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.PGON]:
                                 this.selectPGon(_id);
                                 break;
-                            case EEntTypeStr[EEntType.PLINE]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.PLINE]:
                                 this.selectPLine(_id);
                                 break;
-                            case EEntTypeStr[EEntType.POINT]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.POINT]:
                                 this.selectPoint(_id);
                                 break;
-                            case EEntTypeStr[EEntType.COLL]:
+                            case GICommon.EEntTypeStr[GICommon.EEntType.COLL]:
                                 this.chooseColl(_id);
                                 break;
                             default:
@@ -542,13 +577,13 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             }
         } else if (attrib.action === 'multipleSelect') {
         } else if (attrib.action === 'unselect') {
-            if (attrib.ent_type === EEntTypeStr[EEntType.COLL]) {
+            if (attrib.ent_type === GICommon.EEntTypeStr[GICommon.EEntType.COLL]) {
                 const coll_children = this.dataService.selected_coll.get(attrib.ent_type + attrib.id);
                 if (coll_children && coll_children.length) {
                     coll_children.forEach(child => {
                         this.unselectGeom(child, attrib.ent_type, true);
                     });
-                    this.dataService.selected_ents.get(EEntTypeStr[EEntType.COLL]).delete(attrib.ent_type + attrib.id);
+                    this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.COLL]).delete(attrib.ent_type + attrib.id);
                 }
             } else {
                 this.unselectGeom(attrib.ent_type + attrib.id, attrib.ent_type, true);
@@ -567,18 +602,18 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         this.refreshLabels(ent_type);
     }
 
-    getGISummary(model: GIModel) {
+    getGISummary(model: Model) {
         let colls = 0, pgons = 0, plines = 0, points = 0, wires = 0, edges = 0, vertices = 0, positions = 0;
         if (this) {
-            colls = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.COLL);
-            pgons = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.PGON);
-            plines = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.PLINE);
-            points = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.POINT);
-            // faces = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.FACE);
-            wires = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.WIRE);
-            edges = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.EDGE);
-            vertices = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.VERT);
-            positions = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, EEntType.POSI);
+            colls = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.COLL);
+            pgons = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.PGON);
+            plines = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.PLINE);
+            points = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.POINT);
+            // faces = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.FACE);
+            wires = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.WIRE);
+            edges = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.EDGE);
+            vertices = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.VERT);
+            positions = model.modeldata.geom.snapshot.numEnts(this.nodeIndex, GICommon.EEntType.POSI);
         }
         const gi_summary = [{title: 'Collections', val: colls},
         {title: 'Polygons', val: pgons},
@@ -594,7 +629,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     /**
      * Update the model in the viewer.
      */
-    public async updateModel(model: GIModel) {
+    public async updateModel(model: Model) {
         this._data_threejs = this.dataService.getThreejsScene();
         if (!model) {
             // console.warn('Model or Scene not defined.');
@@ -605,7 +640,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             this._data_threejs.nodeIndex = this.nodeIndex;
             try {
                 // add geometry to the scene
-                this._data_threejs.populateScene(model, this.container);
+                await this._data_threejs.populateScene(model, this.container);
                 // this.resetTable();
                 this.getGISummary(model);
                 if (localStorage.getItem('gi_summary')) {
@@ -622,7 +657,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     this._data_threejs.selected_geoms.clear();
                     const select_groups = {};
                     selected.forEach(s => {
-                        const type = EEntTypeStr[s[0]], id = Number(s[1]);
+                        const type = GICommon.EEntTypeStr[s[0]], id = Number(s[1]);
                         let idList;
                         if (!select_groups[type]) {
                             idList = [];
@@ -642,11 +677,13 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         this.attrTableSelect({ action: 'select', ent_type: type, id: select_groups[type] }, true);
                     }
 
+                    const selectionType = this.selections.find(selection => selection.id === selectingType);
+                    if (!selectionType) { return; }
                     sessionStorage.setItem('mpm_showSelected', 'true');
 
                     sessionStorage.setItem('mpm_changetab', 'true');
                     localStorage.setItem('mpm_attrib_current_tab', this.tab_rev_map[selectingType]);
-                    this.selectEntityType(this.selections.find(selection => selection.id === selectingType));
+                    this.selectEntityType(selectionType);
                 } else {
                     sessionStorage.setItem('mpm_showSelected', 'false');
                     sessionStorage.setItem('mpm_changetab', 'false');
@@ -756,7 +793,9 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         if (event.shiftKey || event.ctrlKey || event.metaKey) {
             this.shiftKeyPressed = true;
         }
-
+        while (intersects[0] && intersects[0].object.name && intersects[0].object.name.indexOf('hidden') !== -1) {
+            intersects.splice(0, 1);
+        }
         // check intersect exist
         if (intersects.length > 0) {
             if (event.which === 1) {
@@ -768,18 +807,18 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 }
                 let intsType = '';
                 switch (this.dataService.selectingEntityType.id) {
-                    case EEntType.POSI:
-                    case EEntType.POINT:
-                    case EEntType.VERT:
+                    case GICommon.EEntType.POSI:
+                    case GICommon.EEntType.POINT:
+                    case GICommon.EEntType.VERT:
                         intsType = 'Points';
                         break;
-                    case EEntType.EDGE:
-                    case EEntType.WIRE:
-                    case EEntType.PLINE:
+                    case GICommon.EEntType.EDGE:
+                    case GICommon.EEntType.WIRE:
+                    case GICommon.EEntType.PLINE:
                         intsType = 'LineSegments';
                         break;
-                    // case EEntType.FACE:
-                    case EEntType.PGON:
+                    // case GICommon.EEntType.FACE:
+                    case GICommon.EEntType.PGON:
                         intsType = 'Mesh';
                         break;
                 }
@@ -792,9 +831,6 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     }
                 }
                 this.selectObj(intsObj);
-                // setTimeout(() => {
-                //     this.activateRender();
-                // }, 50);
             }
         } else {
             if (event.target.tagName === 'CANVAS') {
@@ -838,7 +874,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             map.clear();
         });
         scene.scene_objs_selected.clear();
-        // if (this.dataService.selectingEntityType.id === EEntTypeStr[EEntType.COLL]) {
+        // if (this.dataService.selectingEntityType.id === GICommon.EEntTypeStr[GICommon.EEntType.COLL]) {
         //     document.getElementById('executeButton').click();
         // }
         const positions = Array.from(scene.selected_positions.keys());
@@ -872,7 +908,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
 
     private getSelectingEntityType() {
         const select = JSON.parse(localStorage.getItem('mpm_settings'))['select'];
-        const default_selector = { id: EEntType.PGON, name: 'Polygons' };
+        const default_selector = { id: GICommon.EEntType.PGON, name: 'Polygons' };
         if (select && select.enabledselector) {
             this.selections = [];
             for (const i in this.default_selections) {
@@ -904,49 +940,34 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         const scene = this._data_threejs;
         this.getSelectingEntityType();
         switch (this.dataService.selectingEntityType.id) {
-            case EEntType.POSI:
-
+            case GICommon.EEntType.POSI:
                 if (intersect0.object.type === 'Points') {
                     let posi = 0;
-                    for (const m of scene.posis_map) {
+                    for (const m of scene.select_maps.ps) {
                         if (m[1] === intersect0.index) {
                             posi = m[0];
                             break;
                         }
                     }
-                    // const posi = scene.posis_map.get(intersect0.index);
-                    // const posi = scene.posis_idx_to_i[intersect0.index];
-                    const ent_id = `${EEntTypeStr[EEntType.POSI]}${posi}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.POSI]}${posi}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.POSI], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.POSI], true);
                     } else {
                         this.selectPositions(posi, null, null, ent_id);
                     }
-
-                    // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.POSI], true);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectPositions(posi, null, null, ent_id);
-                    // }
                 } else if (intersect0.object.type === 'LineSegments') {
-                    // let edge;
-                    // const edge_color = (<THREE.LineDashedMaterial>(<THREE.LineSegments> intersect0.object).material).color;
-                    // if (edge_color['r'] === 1 && edge_color['b'] === 1 && edge_color['g'] === 1) {
-                    //     edge = scene.white_edge_select_map.get(intersect0.index / 2);
-                    // } else {
-                    //     edge = scene.edge_select_map.get(intersect0.index / 2);
-                    // }
-
-                    const edge = scene.edge_select_map.get(intersect0.index / 2);
+                    let edge: number;
+                    if (intersect0.object.name === 'obj_edge_navmesh') {
+                        edge = scene.select_maps._e_vr.get(intersect0.index / 2);
+                    } else {
+                        edge = scene.select_maps._e.get(intersect0.index / 2);
+                    }
                     const ent_id = `_e_posi${edge}`;
                     if (scene.selected_positions.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.POSI]);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.POSI]);
                     } else {
                         if (!this.shiftKeyPressed) {
                             this.unselectAll();
@@ -955,20 +976,25 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     }
                 } else if (intersect0.object.type === 'Mesh') {
                     // const tri = scene.tris_select_idx_to_i[intersect0.faceIndex];
-                    const tri = scene.tri_select_map.get(intersect0.faceIndex);
+                    let tri: number;
+                    if (intersect0.object.name === 'obj_tri_navmesh') {
+                        tri = scene.select_maps._t_vr.get(intersect0.faceIndex);
+                    } else {
+                        tri = scene.select_maps._t.get(intersect0.faceIndex);
+                    }
                     const face = this.model.modeldata.geom.nav_tri.navTriToPgon(tri);
                     const ent_id = `pg_posi${face}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.POSI]);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.POSI]);
                     } else {
                         this.selectPositions(null, null, face, ent_id);
                     }
 
                     // if (scene.selected_positions.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.POSI]);
+                    //     this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.POSI]);
                     // } else {
                     //     if (!this.shiftKeyPressed) {
                     //         this.unselectAll();
@@ -977,26 +1003,24 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     // }
                 }
                 break;
-            case EEntType.VERT:
+            case GICommon.EEntType.VERT:
                 if (intersect0.object.type === 'Points') {
                     let posi = 0;
-                    for (const m of scene.posis_map) {
+                    for (const m of scene.select_maps.ps) {
                         if (m[1] === intersect0.index) {
                             posi = m[0];
                             break;
                         }
                     }
-                    // const vert = scene.verts_idx_to_i[intersect0.index];
-                    // const vert = scene.vertex_map.get(intersect0.index);
                     const verts = this.model.modeldata.geom.nav.navPosiToVert(posi);
                     let point: number;
                     if (verts.length > 1) {
-                        this.dropdown.setItems(verts, EEntTypeStr[EEntType.VERT]);
+                        this.dropdown.setItems(verts, GICommon.EEntTypeStr[GICommon.EEntType.VERT]);
                         this.dropdown.visible = true;
                         this.dropdown.position = this.dropdownPosition;
                     } else {
                         let vert = 0;
-                        for (const m of scene.vertex_map) {
+                        for (const m of scene.select_maps._v) {
                             if (m[1] === intersect0.index) {
                                 vert = m[0];
                                 break;
@@ -1004,18 +1028,18 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                         }
                         point = vert;
                     }
-                    const ent_id = `${EEntTypeStr[EEntType.VERT]}${point}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.VERT]}${point}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.VERT], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.VERT], true);
                     } else {
                         this.selectVertex(point, null, null, ent_id);
                     }
 
                     // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.VERT], true);
+                    //     this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.VERT], true);
                     // } else {
                     //     if (!this.shiftKeyPressed) {
                     //         this.unselectAll();
@@ -1023,79 +1047,68 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     //     this.selectVertex(point, null, null, ent_id);
                     // }
                 } else if (intersect0.object.type === 'LineSegments') {
-                    // let edge;
-                    // const edge_color = (<THREE.LineDashedMaterial>(<THREE.LineSegments> intersect0.object).material).color;
-                    // if (edge_color['r'] === 1 && edge_color['b'] === 1 && edge_color['g'] === 1) {
-                    //     edge = scene.white_edge_select_map.get(intersect0.index / 2);
-                    // } else {
-                    //     edge = scene.edge_select_map.get(intersect0.index / 2);
-                    // }
-                    const edge = scene.edge_select_map.get(intersect0.index / 2);
+                    let edge: number;
+                    if (intersect0.object.name === 'obj_edge_navmesh') {
+                        edge = scene.select_maps._e_vr.get(intersect0.index / 2);
+                    } else {
+                        edge = scene.select_maps._e.get(intersect0.index / 2);
+                    }
                     const ent_id = `_e_v${edge}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.VERT]);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.VERT]);
                     } else {
                         this.selectVertex(null, edge, null, ent_id);
                     }
 
-                    // if (scene.selected_vertex.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.VERT]);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectVertex(null, edge, null, ent_id);
-                    // }
                 } else if (intersect0.object.type === 'Mesh') {
-                    const tri = scene.tri_select_map.get(intersect0.faceIndex);
+                    let tri: number;
+                    if (intersect0.object.name === 'obj_tri_navmesh') {
+                        tri = scene.select_maps._t_vr.get(intersect0.faceIndex);
+                    } else {
+                        tri = scene.select_maps._t.get(intersect0.faceIndex);
+                    }
                     const face = this.model.modeldata.geom.nav_tri.navTriToPgon(tri);
-                    // // const tri = scene.tri_select_map.get(intersect0.faceIndex);
-                    // const tri = scene.tris_select_idx_to_i[intersect0.faceIndex];
                     const ent_id = `pg_v${face}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.VERT]);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.VERT]);
                     } else {
                         this.selectVertex(null, null, face, ent_id);
                     }
-
-                    // if (scene.selected_vertex.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.VERT]);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectVertex(null, null, face, ent_id);
-                    // }
                 }
                 break;
-            case EEntType.COLL:
+            case GICommon.EEntType.COLL:
                 if (!this.shiftKeyPressed) {
                     this.unselectAll();
                 }
                 this.selectColl(intersect0, intersect0.object.type);
                 break;
-            case EEntType.PGON:
+            case GICommon.EEntType.PGON:
                 if (intersect0.object.type === 'Mesh') {
-                    const tri = scene.tri_select_map.get(intersect0.faceIndex);
+                    let tri: number;
+                    if (intersect0.object.name === 'obj_tri_navmesh') {
+                        tri = scene.select_maps._t_vr.get(intersect0.faceIndex);
+                    } else {
+                        tri = scene.select_maps._t.get(intersect0.faceIndex);
+                    }
                     const pgon = this.model.modeldata.geom.nav_tri.navTriToPgon(tri);
                     // const tri = scene.tris_select_idx_to_i[intersect0.faceIndex];
-                    const ent_id = `${EEntTypeStr[EEntType.PGON]}${pgon}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.PGON]}${pgon}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.PGON], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.PGON], true);
                     } else {
                         this.selectPGon(pgon);
                     }
                     // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.PGON], true);
+                    //     this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.PGON], true);
                     // } else {
                     //     if (!this.shiftKeyPressed) {
                     //         this.unselectAll();
@@ -1106,39 +1119,32 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     this.showMessages('Polygons');
                 }
                 break;
-            case EEntType.EDGE:
+            case GICommon.EEntType.EDGE:
                 if (intersect0.object.type === 'LineSegments') {
-                    // let edge;
-                    // const edge_color = (<THREE.LineDashedMaterial>(<THREE.LineSegments> intersect0.object).material).color;
-                    // if (edge_color['r'] === 1 && edge_color['b'] === 1 && edge_color['g'] === 1) {
-                    //     edge = scene.white_edge_select_map.get(intersect0.index / 2);
-                    // } else {
-                    //     edge = scene.edge_select_map.get(intersect0.index / 2);
-                    // }
-                    const edge = scene.edge_select_map.get(intersect0.index / 2);
-                    const ent_id = `${EEntTypeStr[EEntType.EDGE]}${edge}`;
+                    let edge: number;
+                    if (intersect0.object.name === 'obj_edge_navmesh') {
+                        edge = scene.select_maps._e_vr.get(intersect0.index / 2);
+                    } else {
+                        edge = scene.select_maps._e.get(intersect0.index / 2);
+                    }
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.EDGE]}${edge}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.EDGE], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.EDGE], true);
                     } else {
                         this.selectEdge(edge);
                     }
-
-                    // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.EDGE], true);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectEdge(edge);
-                    // }
                 } else if (intersect0.object.type === 'Mesh') {
-                    const tri = scene.tri_select_map.get(intersect0.faceIndex);
+                    let tri: number;
+                    if (intersect0.object.name === 'obj_tri_navmesh') {
+                        tri = scene.select_maps._t_vr.get(intersect0.faceIndex);
+                    } else {
+                        tri = scene.select_maps._t.get(intersect0.faceIndex);
+                    }
                     const face = this.model.modeldata.geom.nav_tri.navTriToPgon(tri);
-                    // const tri = scene.tris_select_idx_to_i[intersect0.faceIndex];
-                    const ent_id = `${EEntTypeStr[EEntType.PGON]}${face}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.PGON]}${face}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
@@ -1147,55 +1153,38 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     } else {
                         this.selectEdgeByFace(face, ent_id);
                     }
-
-                    // if (scene.selected_face_edges.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, 'face_edges');
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectEdgeByFace(face, ent_id);
-                    // }
                 } else {
                     this.showMessages('Edges');
                 }
                 break;
-            case EEntType.WIRE:
+            case GICommon.EEntType.WIRE:
                 if (intersect0.object.type === 'LineSegments') {
-                    // let edge;
-                    // const edge_color = (<THREE.LineDashedMaterial>(<THREE.LineSegments> intersect0.object).material).color;
-                    // if (edge_color['r'] === 1 && edge_color['b'] === 1 && edge_color['g'] === 1) {
-                    //     edge = scene.white_edge_select_map.get(intersect0.index / 2);
-                    // } else {
-                    //     edge = scene.edge_select_map.get(intersect0.index / 2);
-                    // }
-                    const edge = scene.edge_select_map.get(intersect0.index / 2);
+                    let edge: number;
+                    if (intersect0.object.name === 'obj_edge_navmesh') {
+                        edge = scene.select_maps._e_vr.get(intersect0.index / 2);
+                    } else {
+                        edge = scene.select_maps._e.get(intersect0.index / 2);
+                    }
                     const wire = this.model.modeldata.geom.nav.navEdgeToWire(edge);
-                    // const edge = scene.edge_select_map.get(intersect0.index / 2)
-                    // const edge = scene.edges_select_idx_to_i[intersect0.index / 2],
-                    const ent_id = `${EEntTypeStr[EEntType.WIRE]}${edge}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.WIRE]}${edge}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.WIRE], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.WIRE], true);
                     } else {
                         this.selectWire(wire);
                     }
-
-                    // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.WIRE], true);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectWire(wire);
-                    // }
                 } else if (intersect0.object.type === 'Mesh') {
-                    const tri = scene.tri_select_map.get(intersect0.faceIndex);
+                    let tri: number;
+                    if (intersect0.object.name === 'obj_tri_navmesh') {
+                        tri = scene.select_maps._t_vr.get(intersect0.faceIndex);
+                    } else {
+                        tri = scene.select_maps._t.get(intersect0.faceIndex);
+                    }
                     const face = this.model.modeldata.geom.nav_tri.navTriToPgon(tri);
                     // const tri = scene.tris_select_idx_to_i[intersect0.faceIndex];
-                    const ent_id = `${EEntTypeStr[EEntType.PGON]}${face}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.PGON]}${face}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
@@ -1204,38 +1193,26 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     } else {
                         this.selectWireByFace(face, ent_id);
                     }
-
-                    // if (scene.selected_face_wires.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, 'face_wires');
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     this.selectWireByFace(face, ent_id);
-                    // }
                 } else {
                     this.showMessages('Wires');
                 }
                 break;
-            case EEntType.PLINE:
+            case GICommon.EEntType.PLINE:
                 if (intersect0.object.type === 'LineSegments') {
-                    // let edge;
-                    // const edge_color = (<THREE.LineDashedMaterial>(<THREE.LineSegments> intersect0.object).material).color;
-                    // if (edge_color['r'] === 1 && edge_color['b'] === 1 && edge_color['g'] === 1) {
-                    //     edge = scene.white_edge_select_map.get(intersect0.index / 2);
-                    // } else {
-                    //     edge = scene.edge_select_map.get(intersect0.index / 2);
-                    // }
-                    const edge = scene.edge_select_map.get(intersect0.index / 2);
+                    let edge: number;
+                    if (intersect0.object.name === 'obj_edge_navmesh') {
+                        edge = scene.select_maps._e_vr.get(intersect0.index / 2);
+                    } else {
+                        edge = scene.select_maps._e.get(intersect0.index / 2);
+                    }
                     const wire = this.model.modeldata.geom.nav.navEdgeToWire(edge);
                     const pline = this.model.modeldata.geom.nav.navWireToPline(wire);
-                    // const edge = scene.edges_select_idx_to_i[intersect0.index / 2];
-                    const ent_id = `${EEntTypeStr[EEntType.PLINE]}${pline}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.PLINE]}${pline}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.PLINE], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.PLINE], true);
                     } else {
                         if (pline !== undefined && pline !== null) {
                             this.selectPLine(pline);
@@ -1243,35 +1220,22 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                             this.showMessages('Selection is not a Polyline', 'custom');
                         }
                     }
-
-                    // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.PLINE], true);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     if (pline !== undefined && pline !== null) {
-                    //         this.selectPLine(pline);
-                    //     } else {
-                    //         this.showMessages('Selection is not a Polyline', 'custom');
-                    //     }
-                    // }
                 } else {
                     this.showMessages('Polylines');
                 }
                 break;
-            case EEntType.POINT:
+            case GICommon.EEntType.POINT:
                 if (intersect0.object.type === 'Points') {
                     const vert = this.model.modeldata.geom.nav.navPosiToVert(intersect0.index);
                     const _point = this.model.modeldata.geom.nav.navVertToPoint(vert[0]);
-                    const point = scene.point_select_map.get(_point);
+                    const point = scene.select_maps.pt.get(_point);
                     // const point = scene.points_select_idx_to_i[_point];
-                    const ent_id = `${EEntTypeStr[EEntType.POINT]}${point}`;
+                    const ent_id = `${GICommon.EEntTypeStr[GICommon.EEntType.POINT]}${point}`;
                     if (!this.shiftKeyPressed) {
                         this.unselectAll();
                     }
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
-                        this.unselectGeom(ent_id, EEntTypeStr[EEntType.POINT], true);
+                        this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.POINT], true);
                     } else {
                         if (point !== undefined && point !== null) {
                             this.selectPoint(point);
@@ -1279,19 +1243,6 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                             this.showMessages('Selection is not a Point', 'custom');
                         }
                     }
-
-                    // if (scene.selected_geoms.has(ent_id)) {
-                    //     this.unselectGeom(ent_id, EEntTypeStr[EEntType.POINT], true);
-                    // } else {
-                    //     if (!this.shiftKeyPressed) {
-                    //         this.unselectAll();
-                    //     }
-                    //     if (point !== undefined && point !== null) {
-                    //         this.selectPoint(point);
-                    //     } else {
-                    //         this.showMessages('Selection is not a Point', 'custom');
-                    //     }
-                    // }
                 } else {
                     this.showMessages('Points');
                 }
@@ -1301,8 +1252,6 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 this.showMessages('Please choose an Entity type.', 'custom');
                 break;
         }
-        // this.activateRender();
-        // this.render();
     }
 
     private showMessages(msg: string, mode: string = 'notice') {
@@ -1323,14 +1272,14 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     private selectPositions(point: number = null, edge: number = null, face: number = null, parent_ent_id: string) {
-        const ent_type_str = EEntTypeStr[EEntType.POSI];
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.POSI];
         const scene = this._data_threejs;
         const posi_ent = this.dataService.selected_ents.get(ent_type_str);
         if (point !== null) {
             const position = this.model.modeldata.attribs.posis.getPosiCoords(point);
             const ent_id = parent_ent_id;
             posi_ent.set(ent_id, point);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, point, EEntType.POSI);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, point, GICommon.EEntType.POSI);
             scene.selectObjPosition(null, ent_id, position, this.container, labelText);
             this.dataService.selected_positions.set(`${parent_ent_id}`, [ent_id]);
         } else if (edge !== null) {
@@ -1341,7 +1290,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 const ent_id = `${ent_type_str}${posi}`;
                 const position = this.model.modeldata.attribs.posis.getPosiCoords(posi);
                 posi_ent.set(ent_id, posi);
-                const labelText = this.indexAsLabel(ent_type_str, ent_id, posi, EEntType.POSI);
+                const labelText = this.indexAsLabel(ent_type_str, ent_id, posi, GICommon.EEntType.POSI);
                 scene.selectObjPosition(parent_ent_id, ent_id, position, this.container, labelText);
                 children.push(ent_id);
             });
@@ -1357,7 +1306,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 const ent_id = `${ent_type_str}${posi}`;
                 const position = this.model.modeldata.attribs.posis.getPosiCoords(posi);
                 posi_ent.set(ent_id, posi);
-                const labelText = this.indexAsLabel(ent_type_str, ent_id, posi, EEntType.POSI);
+                const labelText = this.indexAsLabel(ent_type_str, ent_id, posi, GICommon.EEntType.POSI);
                 scene.selectObjPosition(parent_ent_id, ent_id, position, this.container, labelText);
                 children.push(ent_id);
             });
@@ -1373,14 +1322,14 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     private selectVertex(point: number = null, edge: number = null, face: number = null, parent_ent_id: string) {
-        const ent_type_str = EEntTypeStr[EEntType.VERT];
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.VERT];
         const posi_ent = this.dataService.selected_ents.get(ent_type_str);
         const scene = this._data_threejs;
         if (point !== null) {
             const position = this.model.modeldata.attribs.posis.getVertCoords(point);
             const ent_id = parent_ent_id;
             posi_ent.set(ent_id, point);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, point, EEntType.VERT);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, point, GICommon.EEntType.VERT);
             scene.selectObjvertex(null, ent_id, position, this.container, labelText);
             this.dataService.selected_vertex.set(`${parent_ent_id}`, [ent_id]);
         } else if (edge !== null) {
@@ -1390,7 +1339,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 const ent_id = `${ent_type_str}${vert}`;
                 const position = this.model.modeldata.attribs.posis.getVertCoords(vert);
                 posi_ent.set(ent_id, vert);
-                const labelText = this.indexAsLabel(ent_type_str, ent_id, vert, EEntType.VERT);
+                const labelText = this.indexAsLabel(ent_type_str, ent_id, vert, GICommon.EEntType.VERT);
                 scene.selectObjvertex(parent_ent_id, ent_id, position, this.container, labelText);
                 children.push(ent_id);
             });
@@ -1407,7 +1356,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 const ent_id = `${ent_type_str}${vert}`;
                 const position = this.model.modeldata.attribs.posis.getVertCoords(vert);
                 posi_ent.set(ent_id, vert);
-                const labelText = this.indexAsLabel(ent_type_str, ent_id, vert, EEntType.VERT);
+                const labelText = this.indexAsLabel(ent_type_str, ent_id, vert, GICommon.EEntType.VERT);
                 scene.selectObjvertex(parent_ent_id, ent_id, position, this.container, labelText);
                 children.push(ent_id);
             });
@@ -1418,21 +1367,21 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     private unselectGeom(ent_id: string, ent_type_str: string, direct = false) {
         const scene = this._data_threejs;
         if (!direct) {
-            if (ent_type_str === EEntTypeStr[EEntType.POSI]) {
+            if (ent_type_str === GICommon.EEntTypeStr[GICommon.EEntType.POSI]) {
                 this.unselectLabel(ent_id, ent_type_str);
                 scene.unselectObjGroup(ent_id, this.container, 'positions');
                 const children = this.dataService.selected_positions.get(ent_id);
                 children.forEach(c => {
-                    this.dataService.selected_ents.get(EEntTypeStr[EEntType.POSI]).delete(c);
+                    this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.POSI]).delete(c);
                 });
                 this.dataService.selected_positions.delete(ent_id);
 
-            } else if (ent_type_str === EEntTypeStr[EEntType.VERT]) {
+            } else if (ent_type_str === GICommon.EEntTypeStr[GICommon.EEntType.VERT]) {
                 this.unselectLabel(ent_id, ent_type_str);
                 scene.unselectObjGroup(ent_id, this.container, 'vertex');
                 const children = this.dataService.selected_vertex.get(ent_id);
                 children.forEach(c => {
-                    this.dataService.selected_ents.get(EEntTypeStr[EEntType.VERT]).delete(c);
+                    this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.VERT]).delete(c);
                 });
                 this.dataService.selected_vertex.delete(ent_id);
 
@@ -1440,7 +1389,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 scene.unselectObjGroup(ent_id, this.container, 'face_edges');
                 const children = this.dataService.selected_face_edges.get(ent_id);
                 children.forEach(c => {
-                    this.dataService.selected_ents.get(EEntTypeStr[EEntType.EDGE]).delete(c);
+                    this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.EDGE]).delete(c);
                 });
                 this.dataService.selected_face_edges.delete(ent_id);
 
@@ -1448,7 +1397,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 scene.unselectObjGroup(ent_id, this.container, 'face_wires');
                 const children = this.dataService.selected_face_wires.get(ent_id);
                 children.forEach(c => {
-                    this.dataService.selected_ents.get(EEntTypeStr[EEntType.WIRE]).delete(c);
+                    this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.WIRE]).delete(c);
                 });
                 this.dataService.selected_face_wires.delete(ent_id);
             }
@@ -1469,19 +1418,19 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     private selectEdge(line: number) {
-        const ent_type_str = EEntTypeStr[EEntType.EDGE],
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.EDGE],
             verts = this.model.modeldata.geom.nav.navEdgeToVert(line),
             positions = verts.map(v => this.model.modeldata.attribs.posis.getVertCoords(v)),
             posi_flat = [].concat(...positions),
             ent_id = `${ent_type_str}${line}`;
         this.dataService.selected_ents.get(ent_type_str).set(ent_id, line);
-        const labelText = this.indexAsLabel(ent_type_str, ent_id, line, EEntType.EDGE);
+        const labelText = this.indexAsLabel(ent_type_str, ent_id, line, GICommon.EEntType.EDGE);
         this._data_threejs.selectObjLine(ent_id, [], posi_flat, this.container, labelText);
     }
 
     private selectEdgeByFace(face: number, parent_ent_id: string) {
-        const ent_type_str = EEntTypeStr[EEntType.EDGE],
-            edges = this.model.modeldata.geom.nav.navAnyToAny(EEntType.PGON, EEntType.EDGE, face);
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.EDGE],
+            edges = this.model.modeldata.geom.nav.navAnyToAny(GICommon.EEntType.PGON, GICommon.EEntType.EDGE, face);
         const children = [];
         edges.map(edge => {
             const ent_id = `${ent_type_str}${edge}`;
@@ -1495,14 +1444,14 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             });
             const posi_flat = [].concat(...position);
             this.dataService.selected_ents.get(ent_type_str).set(ent_id, edge);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, edge, EEntType.EDGE);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, edge, GICommon.EEntType.EDGE);
             this._data_threejs.selectEdgeByFace(parent_ent_id, ent_id, indices, posi_flat, this.container, labelText);
         });
         this.dataService.selected_face_edges.set(`${parent_ent_id}`, children);
     }
 
     private selectWire(wire: number) {
-        const ent_type_str = EEntTypeStr[EEntType.WIRE],
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.WIRE],
             edges = this.model.modeldata.geom.nav.navWireToEdge(wire),
             verts = edges.map(e => this.model.modeldata.geom.nav.navEdgeToVert(e)),
             verts_flat = [].concat(...[].concat(...verts)),
@@ -1515,12 +1464,12 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         const posi_flat = [].concat(...positions),
             ent_id = `${ent_type_str}${wire}`;
         this.dataService.selected_ents.get(ent_type_str).set(ent_id, wire);
-        const labelText = this.indexAsLabel(ent_type_str, ent_id, wire, EEntType.WIRE);
+        const labelText = this.indexAsLabel(ent_type_str, ent_id, wire, GICommon.EEntType.WIRE);
         this._data_threejs.selectObjLine(ent_id, indices, posi_flat, this.container, labelText);
     }
 
     private selectWireByFace(face: number, parent_ent_id: string) {
-        const ent_type_str = EEntTypeStr[EEntType.WIRE],
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.WIRE],
             wires = this.model.modeldata.geom.nav.navPgonToWire(face);
         const children = [];
         wires.map(wire => {
@@ -1538,18 +1487,18 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             });
             const posi_flat = [].concat(...positions);
             this.dataService.selected_ents.get(ent_type_str).set(ent_id, wire);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, wire, EEntType.WIRE);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, wire, GICommon.EEntType.WIRE);
             this._data_threejs.selectWireByFace(parent_ent_id, ent_id, indices, posi_flat, this.container, labelText);
         });
         this.dataService.selected_face_wires.set(`${parent_ent_id}`, children);
     }
 
     private selectFace(face: number) {
-        const ent_type_str = EEntTypeStr[EEntType.PGON],
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.PGON],
             tri = this.model.modeldata.geom.nav_tri.navPgonToTri(face),
             verts = tri.map(index => this.model.modeldata.geom.nav_tri.navTriToVert(index)),
             verts_flat = [].concat(...verts),
-            posis = verts_flat.map(v => this.model.modeldata.geom.nav.navAnyToPosi(EEntType.VERT, v)),
+            posis = verts_flat.map(v => this.model.modeldata.geom.nav.navAnyToPosi(GICommon.EEntType.VERT, v)),
             posis_flat = [].concat(...posis),
             tri_indices = [],
             positions = [];
@@ -1560,14 +1509,14 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         const posi_flat = [].concat(...positions),
             ent_id = `${ent_type_str}${face}`;
         this.dataService.selected_ents.get(ent_type_str).set(ent_id, face);
-        const labelText = this.indexAsLabel(ent_type_str, ent_id, face, EEntType.PGON);
+        const labelText = this.indexAsLabel(ent_type_str, ent_id, face, GICommon.EEntType.PGON);
         this._data_threejs.selectObjFace(ent_id, tri_indices, posi_flat, this.container, labelText);
     }
 
-    private indexAsLabel(ent_type_str: string, ent_id: string, id: number, type: EEntType) {
+    private indexAsLabel(ent_type_str: string, ent_id: string, id: number, type: GICommon.EEntType) {
         let indexAsLabel;
         const showSelected = JSON.parse(sessionStorage.getItem('mpm_showSelected'));
-        if (showSelected) {
+        if (showSelected && this.tab_map[this.getCurrentTab()] === type) {
             const sorted = sortByKey(this.dataService.selected_ents.get(ent_type_str));
             const arr = Array.from(sorted.values());
             indexAsLabel = String(arr.findIndex(ent => ent === id));
@@ -1579,27 +1528,27 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     private selectPoint(point: number) {
-        const ent_type_str = EEntTypeStr[EEntType.POINT];
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.POINT];
         const result = this.getPointPosis(point, null);
         if (result) {
             const point_indices = result.point_indices;
             const point_posi = result.posi_flat;
             const ent_id = `${ent_type_str}${point}`;
             this.dataService.selected_ents.get(ent_type_str).set(ent_id, point);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, point, EEntType.POINT);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, point, GICommon.EEntType.POINT);
             this._data_threejs.selectObjPoint(ent_id, point_indices, point_posi, this.container, labelText);
         }
     }
 
     private selectPLine(pline: number) {
-        const ent_type_str = EEntTypeStr[EEntType.PLINE];
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.PLINE];
         const result = this.getPLinePosis(pline);
         const ent_id = `${ent_type_str}${pline}`;
         if (result) {
             const posi_flat = result.posi_flat;
             const indices = result.indices;
             this.dataService.selected_ents.get(ent_type_str).set(ent_id, pline);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, pline, EEntType.PLINE);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, pline, GICommon.EEntType.PLINE);
             this._data_threejs.selectObjLine(ent_id, indices, posi_flat, this.container, labelText);
         } else {
             this.showMessages('Please Select a Polyline', 'custom');
@@ -1607,7 +1556,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     private selectPGon(face: number) {
-        const ent_type_str = EEntTypeStr[EEntType.PGON];
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.PGON];
         const result = this.getPGonPosis(face);
         if (result) {
             const posi_flat = result.posi_flat;
@@ -1615,7 +1564,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
 
             const ent_id = `${ent_type_str}${face}`;
             this.dataService.selected_ents.get(ent_type_str).set(ent_id, face);
-            const labelText = this.indexAsLabel(ent_type_str, ent_id, face, EEntType.PGON);
+            const labelText = this.indexAsLabel(ent_type_str, ent_id, face, GICommon.EEntType.PGON);
             this._data_threejs.selectObjFace(ent_id, tri_indices, posi_flat, this.container, labelText);
         }
     }
@@ -1636,9 +1585,9 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         }
 
         const point_indices: number[] = [];
-        const positions: Txyz[] = [];
+        const positions = [];
         verts_flat.map((v, i) => {
-            positions.push(this.model.modeldata.attribs.posis.getPosiCoords(v));
+            positions.push(this.model.modeldata.attribs.posis.getVertCoords(v));
             point_indices.push(i);
         });
         const posi_flat = [].concat(...positions);
@@ -1708,7 +1657,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         const tris_flat = [].concat(...tris);
         const verts = tris_flat.map(tri => this.model.modeldata.geom.nav_tri.navTriToVert(tri));
         const verts_flat = [].concat(...verts);
-        const posis = verts_flat.map(v => this.model.modeldata.geom.nav.navAnyToPosi(EEntType.VERT, v));
+        const posis = verts_flat.map(v => this.model.modeldata.geom.nav.navAnyToPosi(GICommon.EEntType.VERT, v));
         const posis_flat = [].concat(...posis);
         const indices = [];
         const positions = [];
@@ -1724,27 +1673,20 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     private selectColl(object: THREE.Intersection, type) {
         let colls = [];
         if (type === 'Mesh') {
-            const tri = this._data_threejs.tri_select_map.get(object.faceIndex);
+            const tri = this._data_threejs.select_maps._t.get(object.faceIndex);
             colls = this.model.modeldata.geom.nav_tri.navTriToColl(tri);
         } else if (type === 'LineSegments') {
-            // let edge;
-            // const edge_color = (<THREE.LineDashedMaterial>(<THREE.LineSegments> object.object).material).color;
-            // if (edge_color['r'] === 1 && edge_color['b'] === 1 && edge_color['g'] === 1) {
-            //     edge = this._data_threejs.white_edge_select_map.get(object.index / 2);
-            // } else {
-            //     edge = this._data_threejs.edge_select_map.get(object.index / 2);
-            // }
-            const edge = this._data_threejs.edge_select_map.get(object.index / 2);
-            colls = this.model.modeldata.geom.nav.navAnyToColl(EEntType.EDGE, edge);
+            const edge = this._data_threejs.select_maps._e.get(object.index / 2);
+            colls = this.model.modeldata.geom.nav.navAnyToColl(GICommon.EEntType.EDGE, edge);
         } else if (type === 'Points') {
             const vert = this.model.modeldata.geom.nav.navPosiToVert(object.index);
             const point = this.model.modeldata.geom.nav.navVertToPoint(vert[0]);
-            colls = this.model.modeldata.geom.nav.navAnyToColl(EEntType.POINT, point);
+            colls = this.model.modeldata.geom.nav.navAnyToColl(GICommon.EEntType.POINT, point);
         }
         /**
          * Show dropdown menu only when Entity belongs to more than 1 Collection.
          */
-        if (this.dataService.selected_ents.get(EEntTypeStr[EEntType.COLL]).size === 0 && colls.length > 1) {
+        if (this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.COLL]).size === 0 && colls.length > 1) {
             this.dropdown.setItems(colls, 'co');
             this.dropdown.visible = true;
             this.dropdown.position = this.dropdownPosition;
@@ -1757,11 +1699,11 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
 
     private chooseColl(id: number) {
         const scene = this._data_threejs;
-        const coll_id = `${EEntTypeStr[EEntType.COLL]}${id}`;
+        const coll_id = `${GICommon.EEntTypeStr[GICommon.EEntType.COLL]}${id}`;
         const children = [];
         const pgons = this.model.modeldata.geom.nav_snapshot.navCollToPgon(this.nodeIndex, id);
         const pgons_flat = [].concat(...pgons);
-        let labelText = this.indexAsLabel(EEntTypeStr[EEntType.COLL], coll_id, id, EEntType.COLL);
+        let labelText = this.indexAsLabel(GICommon.EEntTypeStr[GICommon.EEntType.COLL], coll_id, id, GICommon.EEntType.COLL);
 
         if (pgons_flat.length) {
             const pgonResult = this.getPGonPosis(null, pgons_flat);
@@ -1769,9 +1711,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             const pgons_indices = pgonResult.indices;
 
             if (pgons_indices.length !== 0) {
-                // const attrib_val = this.model.modeldata.attribs.get.getAttribValue(EEntType.COLL, EAttribNames.NAME, id);
-                // const selecting = attrib_val ? attrib_val.toString() : `${EEntType.COLL}${id}`;
-                const pgon_id = `${EEntTypeStr[EEntType.COLL]}_pg_${id}`;
+                const pgon_id = `${GICommon.EEntTypeStr[GICommon.EEntType.COLL]}_pg_${id}`;
                 scene.selectObjFace(coll_id, pgons_indices, pgons_posi, this.container, labelText);
                 children.push(pgon_id);
                 labelText = false;
@@ -1785,7 +1725,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             const plines_posi = plineResult.posi_flat;
             const plines_indices = plineResult.indices;
             if (plines_indices.length !== 0) {
-                const pline_id = `${EEntTypeStr[EEntType.COLL]}_pl_${id}`;
+                const pline_id = `${GICommon.EEntTypeStr[GICommon.EEntType.COLL]}_pl_${id}`;
                 scene.selectObjLine(coll_id, plines_indices, plines_posi, this.container, labelText);
                 children.push(pline_id);
                 labelText = false;
@@ -1799,26 +1739,26 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             const point_posi = pointResult.posi_flat;
             const point_indices = pointResult.point_indices;
             if (point_indices.length !== 0) {
-                const point_id = `${EEntTypeStr[EEntType.COLL]}_pt_${id}`;
+                const point_id = `${GICommon.EEntTypeStr[GICommon.EEntType.COLL]}_pt_${id}`;
                 scene.selectObjPoint(coll_id, point_indices, point_posi, this.container, labelText);
                 children.push(point_id);
                 labelText = false;
             }
         }
 
-        this.dataService.selected_ents.get(EEntTypeStr[EEntType.COLL]).set(coll_id, id);
+        this.dataService.selected_ents.get(GICommon.EEntTypeStr[GICommon.EEntType.COLL]).set(coll_id, id);
         this.dataService.selected_coll.set(coll_id, children);
         // this.refreshTable();
     }
 
     private chooseVertex(id: number) {
-        const ent_type_str = EEntTypeStr[EEntType.VERT];
+        const ent_type_str = GICommon.EEntTypeStr[GICommon.EEntType.VERT];
         const posi_ent = this.dataService.selected_ents.get(ent_type_str);
         const scene = this._data_threejs;
         const date = new Date(), timestamp = date.getTime();
         const position = this.model.modeldata.attribs.posis.getVertCoords(id);
         const ent_id = `${ent_type_str}${id}`;
-        const labelText = this.indexAsLabel(ent_type_str, ent_id, id, EEntType.VERT);
+        const labelText = this.indexAsLabel(ent_type_str, ent_id, id, GICommon.EEntType.VERT);
         scene.selectObjvertex(`_single_v${timestamp}`, ent_id, position, this.container, labelText);
         posi_ent.set(ent_id, id);
         this.dataService.selected_vertex.set(`_single_v${timestamp}`, [ent_id]);
@@ -1836,8 +1776,8 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         }
     }
 
-    private EntTypeToStr(ent_type: EEntType) {
-        return EEntTypeStr[ent_type];
+    private EntTypeToStr(ent_type: GICommon.EEntType) {
+        return GICommon.EEntTypeStr[ent_type];
     }
 
     enableSelect() {
@@ -1845,6 +1785,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     private selectEntityType(selection: { id: number, name: string }) {
+        if (!selection) { return; }
         this.dataService.updateSelectingEntityType(selection);
         this.SelectingEntityType = selection;
         const settings = JSON.parse(localStorage.getItem('mpm_settings'));
@@ -1871,9 +1812,9 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
 
     selectEntity(id: number) {
-        if (this.dataService.selectingEntityType.id === EEntType.COLL) {
+        if (this.dataService.selectingEntityType.id === GICommon.EEntType.COLL) {
             this.chooseColl(id);
-        } else if (this.dataService.selectingEntityType.id === EEntType.VERT) {
+        } else if (this.dataService.selectingEntityType.id === GICommon.EEntType.VERT) {
             this.chooseVertex(id);
         }
         // not sure why but this has to be done
@@ -1882,33 +1823,6 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                 this.activateRender();
             }, 0);
         }
-    }
-
-    getMaxNodeSelect() {
-        if (this._data_threejs.timeline_groups) {
-            return this._data_threejs.timeline_groups.length - 1;
-        }
-        return 0;
-    }
-
-    getSliderWidth() {
-        let width = 10;
-        for (const g of this._data_threejs.timeline_groups) {
-            width += g.length * 7 + 5;
-        }
-        return width + 'px';
-    }
-
-    changeNodeSlider(event: Event) {
-        const nodeSelInput = <HTMLInputElement> document.getElementById('hidden_node_selection');
-        nodeSelInput.value = this._data_threejs.timeline_groups[(<HTMLInputElement> event.target).value];
-        (<HTMLButtonElement> document.getElementById('hidden_node_selection_button')).click();
-    }
-
-    changeNodeDropdown(event: Event) {
-        const nodeSelInput = <HTMLInputElement> document.getElementById('hidden_node_selection');
-        nodeSelInput.value = (<HTMLInputElement> event.target).value;
-        (<HTMLButtonElement> document.getElementById('hidden_node_selection_button')).click();
     }
 
 

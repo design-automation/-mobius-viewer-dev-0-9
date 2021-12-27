@@ -239,7 +239,7 @@ button{
     position: absolute;
     width: 40px;
     bottom:2px;
-    right:2px; 
+    right:10px; 
     text-align:center;
     color: $color1;
     background-color:transparent;
@@ -247,6 +247,9 @@ button{
     user-select: none;
     &:hover {
         color:$selected-color;
+    }
+    p {
+        margin: 2px;
     }
     // mat-icon {
     //     svg {

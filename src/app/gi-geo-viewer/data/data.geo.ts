@@ -1,13 +1,10 @@
-import { GIModel } from '@libs/geo-info/GIModel';
+import { Model, GICommon, _parameterTypes} from '@design-automation/mobius-sim-funcs';
 import { GeoSettings } from '../gi-geo-viewer.settings';
-import { EEntType, Txyz, TAttribDataTypes, LONGLAT } from '@libs/geo-info/common';
 import * as itowns from 'itowns/dist/itowns';
-import { DataService } from '../../gi-viewer/data/data.service';
 import * as THREE from 'three';
-import { AmbientLight } from 'three';
 import * as suncalc from 'suncalc';
 
-
+const LONGLAT = _parameterTypes.LONGLAT;
 export const API_MAPS = [
                             'Here map normal',
                             'Here map normal grey',
@@ -37,7 +34,7 @@ export const API_MAPS_KEY_MAPPING = {
 export class DataGeo {
     public viewer: any;
     // the GI model to display
-    public model: GIModel;
+    public model: Model;
 
     // Geo Settings
     public settings: GeoSettings;
@@ -70,15 +67,11 @@ export class DataGeo {
      *
      */
     public createGeoViewer(threejsScene) {
-        this._getLayers();
-        this._getTerrains();
-
         const placement = {
             coord: new itowns.Coordinates('EPSG:4326', LONGLAT[0], LONGLAT[1]),
             range: 1000,
             tilt: 50
         };
-
         this.lightingCamera = new THREE.Camera();
 
         this.container = document.getElementById('threejs-geo-container');
@@ -86,22 +79,21 @@ export class DataGeo {
         this.view.mainLoop.gfxEngine.renderer.setPixelRatio( window.devicePixelRatio );
         this.view.mainLoop.gfxEngine.renderer.shadowMap.enabled = true;
         this.view.mainLoop.gfxEngine.renderer.shadowMap.type = itowns.THREE.PCFSoftShadowMap;
-
         this.camTarget = this.view.controls.getLookAtCoordinate();
         // this.viewControl = new itowns.GlobeControls(this.view, this.camTarget, 200);
 
-        // default orbit control:
-        // DOLLY: {mouseButton: 1, enable: true}
-        // MOVE_GLOBE: {mouseButton: 0, enable: true, finger: 1}
-        // NONE: {}
-        // ORBIT: {mouseButton: 0, keyboard: 17, enable: true, finger: 2}
-        // PAN: {mouseButton: 2, up: 38, bottom: 40, left: 37, right: 39, up: 38}
-        // PANORAMIC: {mouseButton: 0, keyboard: 16, enable: true}
-        this.view.controls.states.ORBIT = {mouseButton: 0, enable: true, finger: 2};
-        // this.view.controls.states.PAN = {mouseButton: 2, bottom: 40, left: 37, right: 39, up: 38, enable: true};
-        // this.view.controls.states.MOVE_GLOBE = {mouseButton: 0, keyboard: 17, enable: true, finger: 1};
-        this.view.controls.states.PAN = {mouseButton: 0, keyboard: 17, enable: true, finger: 1};
-        this.view.controls.states.MOVE_GLOBE = {mouseButton: 2, bottom: 40, left: 37, right: 39, up: 38, enable: true};
+        // // default orbit control:
+        // // DOLLY: {mouseButton: 1, enable: true}
+        // // MOVE_GLOBE: {mouseButton: 0, enable: true, finger: 1}
+        // // NONE: {}
+        // // ORBIT: {mouseButton: 0, keyboard: 17, enable: true, finger: 2}
+        // // PAN: {mouseButton: 2, up: 38, bottom: 40, left: 37, right: 39, up: 38}
+        // // PANORAMIC: {mouseButton: 0, keyboard: 16, enable: true}
+        this.view.controls.states.setFromOptions({
+                ORBIT: {mouseButton: itowns.THREE.MOUSE.LEFT, enable: true, finger: 2},
+                PAN: {mouseButton: itowns.THREE.MOUSE.LEFT, keyboard: 17, enable: true, finger: 1},
+                MOVE_GLOBE: {mouseButton: itowns.THREE.MOUSE.RIGHT, bottom: 40, left: 37, right: 39, up: 38, enable: true}
+        });
 
         let layerIndex = 0;
         if ( this.settings && this.settings.imagery && this.settings.imagery.layer ) {
@@ -200,22 +192,24 @@ export class DataGeo {
             //     }
             // }
         }
-        // if (newSetting.camera) {
-        //     if (newSetting.camera.pos) {
-        //         this.settings.camera.pos.x = newSetting.camera.pos.x;
-        //         this.settings.camera.pos.y = newSetting.camera.pos.y;
-        //         this.settings.camera.pos.z = newSetting.camera.pos.z;
-        //         this.settings.camera.direction.x = newSetting.camera.direction.x;
-        //         this.settings.camera.direction.y = newSetting.camera.direction.y;
-        //         this.settings.camera.direction.z = newSetting.camera.direction.z;
-        //         this.settings.camera.up.x = newSetting.camera.up.x;
-        //         this.settings.camera.up.y = newSetting.camera.up.y;
-        //         this.settings.camera.up.z = newSetting.camera.up.z;
-        //         this.settings.camera.right.x = newSetting.camera.right.x;
-        //         this.settings.camera.right.y = newSetting.camera.right.y;
-        //         this.settings.camera.right.z = newSetting.camera.right.z;
-        //     }
-        // }
+        if (newSetting.camera) {
+            if (newSetting.camera.pos) {
+                if (newSetting.camera.pos.x !== 0 &&
+                    this.settings.camera.pos.x !== newSetting.camera.pos.x &&
+                    this.settings.camera.pos.y !== newSetting.camera.pos.y &&
+                    this.settings.camera.pos.z !== newSetting.camera.pos.z) {
+                    this.view.camera.camera3D.position.set(newSetting.camera.pos.x, newSetting.camera.pos.y, newSetting.camera.pos.z);
+                    this.view.camera.camera3D.rotation.set(newSetting.camera.rot.x, newSetting.camera.rot.y, newSetting.camera.rot.z);
+                    this.view.notifyChange();
+                }
+                this.settings.camera.pos.x = newSetting.camera.pos.x;
+                this.settings.camera.pos.y = newSetting.camera.pos.y;
+                this.settings.camera.pos.z = newSetting.camera.pos.z;
+                this.settings.camera.rot.x = newSetting.camera.rot.x;
+                this.settings.camera.rot.y = newSetting.camera.rot.y;
+                this.settings.camera.rot.z = newSetting.camera.rot.z;
+            }
+        }
         if (newSetting.time) {
             if (newSetting.time.date) {
                 this.settings.time.date = newSetting.time.date;
@@ -248,14 +242,14 @@ export class DataGeo {
         }
     }
 
-    refreshModel(threejsScene) {
+    refreshModel(threejsScene, updatePos = false) {
         this.removeMobiusObjs();
         const threeJSGroup = new itowns.THREE.Group();
         threeJSGroup.name = 'mobius_geom';
 
 
         for (const i of threejsScene.scene.children) {
-            if (i.name.startsWith('obj_')) {
+            if (i.name.startsWith('obj_') && i.name.indexOf('hidden') === -1) {
                 threeJSGroup.add(i.clone());
             }
         }
@@ -265,7 +259,7 @@ export class DataGeo {
         this.elevation = 0;
         if (this.model.modeldata.attribs.query.hasModelAttrib('geolocation')) {
             const geoloc: any = this.model.modeldata.attribs.get.getModelAttribVal('geolocation');
-            const long_value: TAttribDataTypes  = geoloc.longitude;
+            const long_value  = geoloc.longitude;
             if (typeof long_value !== 'number') {
                 throw new Error('Longitude attribute must be a number.');
             }
@@ -273,7 +267,7 @@ export class DataGeo {
             if (this.longitude < -180 || this.longitude > 180) {
                 throw new Error('Longitude attribute must be between -180 and 180.');
             }
-            const lat_value: TAttribDataTypes = geoloc.latitude;
+            const lat_value = geoloc.latitude;
             if (typeof lat_value !== 'number') {
                 throw new Error('Latitude attribute must be a number');
             }
@@ -282,7 +276,7 @@ export class DataGeo {
                 throw new Error('Latitude attribute must be between 0 and 90.');
             }
             if (geoloc.elevation) {
-                const ele_value: TAttribDataTypes = geoloc.elevation;
+                const ele_value = geoloc.elevation;
                 if (typeof ele_value !== 'number') {
                     throw new Error('Elevation attribute must be a number');
                 }
@@ -309,32 +303,46 @@ export class DataGeo {
 
             if (north_dir.constructor === [].constructor && north_dir.length === 2) {
                 // make the north vector and the default north vector
-                const north_cartesian = new THREE.Vector3(north_dir[0], north_dir[1], 0);
-                const model_cartesian = new THREE.Vector3(0, 1, 0);
-
-                // const angle = north_cartesian.angleTo(model_cartesian);
-                threeJSGroup.rotateZ(north_cartesian.angleTo(model_cartesian));
+                const model_cartesian = new THREE.Vector3(north_dir[0], north_dir[1], 0);
+                const north_cartesian = new THREE.Vector3(0, 1, 0);
+                let angle = north_cartesian.angleTo(model_cartesian);
+                if (north_cartesian.cross(model_cartesian).z > 0) {
+                    angle = -angle;
+                }
+                threeJSGroup.rotateZ(angle);
             }
         }
 
-
-        threeJSGroup.updateMatrixWorld();
+        threeJSGroup.updateMatrixWorld(true);
+        console.log(this.view.scene)
+        console.log(threeJSGroup)
         this.view.scene.add(threeJSGroup);
 
         // this._addGround(threejsScene, cameraTargetPosition);
-
-        this.scale = threejsScene._all_objs_sphere.radius;
+        if (threejsScene._all_objs_sphere) {
+            this.scale = threejsScene._all_objs_sphere.radius;
+        } else {
+            this.scale = 1;
+        }
 
         const lightTarget = new THREE.Object3D();
         lightTarget.name = 'mobius_lightTarget';
         lightTarget.position.copy(cameraTargetPosition);
-        lightTarget.updateMatrixWorld();
+        lightTarget.updateMatrixWorld(true);
         this.view.scene.add(lightTarget);
 
-        this.updateLightPos(this.settings.time.date, lightTarget);
+        // this.lookAtObj(threejsScene);
 
         // this.view.scene.add(lighting);
-        this.lookAtObj(threejsScene);
+        if (updatePos) {
+            this.view.camera.camera3D.position.set(this.settings.camera.pos.x, this.settings.camera.pos.y, this.settings.camera.pos.z);
+            this.view.camera.camera3D.rotation.set(this.settings.camera.rot.x, this.settings.camera.rot.y, this.settings.camera.rot.z);
+            this.view.notifyChange();
+        } else {
+            // this.lookAtObj(threejsScene);
+        }
+        this.updateLightPos(this.settings.time.date, lightTarget);
+        this.updateHUD();
     }
 
     public updateLightPos(time, lightTarget?) {
@@ -349,9 +357,21 @@ export class DataGeo {
         const lightingTime = new Date(time);
         const lightingPos = suncalc.getPosition(lightingTime, this.latitude, this.longitude);
 
-        const lighting = this.view.scene.children[0].children[0]
-        // const lighting = new itowns.THREE.DirectionalLight(0xFFFFFF, 1);
-        // lighting.name = 'mobius_lighting';
+        // const lighting = this.view.scene.children[0].children[0]
+        let lighting;
+        let lighting_check = false;
+        for (const i of this.view.scene.children) {
+            if (i.name === 'mobius_lighting') {
+                lighting = i;
+                lighting_check = true;
+                break;
+            }
+        }
+        if (!lighting_check) {
+            lighting = new itowns.THREE.DirectionalLight(0xFFFFFF, 1);
+            lighting.name = 'mobius_lighting';
+            this.view.scene.add(lighting);
+        }
         // this.getDLPosition(distance);
         lighting.castShadow = true;
         lighting.visible = true;
@@ -367,7 +387,7 @@ export class DataGeo {
         itowns.CameraUtils.transformCameraToLookAtTarget(this.view, cam, {
             coord: this.camTarget,
             tilt: tilt,
-            heading: -lightingPos.azimuth * 180 / Math.PI,
+            heading: lightingPos.azimuth * 180 / Math.PI,
             // tilt: 45,
             // heading: -90,
             range: this.scale
@@ -377,7 +397,6 @@ export class DataGeo {
         } else {
             lighting.intensity = 1;
         }
-        console.log('tilt:', lightingPos.altitude * 180 / Math.PI, 'heading:', lightingPos.azimuth * 180 / Math.PI )
 
         // lighting.matrix.copy(this.lightingCamera.matrix);
         // lighting.matrixWorld.copy(this.lightingCamera.matrixWorld);
@@ -391,11 +410,10 @@ export class DataGeo {
         cam.top = this.scale;
         cam.bottom = -this.scale;
 
-        lighting.updateMatrixWorld();
+        lighting.updateMatrixWorld(true);
 
     }
     private _addGround(threejsScene, groundPos) {
-        console.log(threejsScene._all_objs_sphere)
         const geometry = new THREE.PlaneBufferGeometry( threejsScene._all_objs_sphere.radius * 5, threejsScene._all_objs_sphere.radius * 5, 32, 32);
 
         const material = new THREE.ShadowMaterial({
@@ -416,10 +434,21 @@ export class DataGeo {
         plane.lookAt(new THREE.Vector3(0, 0, 0));
         plane.rotateY(Math.PI);
 
-        plane.updateMatrixWorld();
+        plane.updateMatrixWorld(true);
         this.view.scene.add(plane);
     }
 
+    updateHUD() {
+        const hud = document.getElementById('geo_hud');
+        if (hud) {
+            if (!this.model.modeldata.attribs.query.hasEntAttrib(GICommon.EEntType.MOD, 'hud')) {
+                hud.innerHTML = '';
+                hud.style.visibility = 'hidden';
+                return;
+            }
+            hud.innerHTML = this.model.modeldata.attribs.get.getModelAttribVal('hud') as string;
+        }
+    }
 
     // PRIVATE METHODS
     private _getLayers() {
@@ -427,7 +456,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'OpenStreetMap',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/png',
                 url: 'https://a.tile.openstreetmap.org/${z}/${x}/${y}.png',
                 attribution: {
@@ -445,7 +474,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'OpenTopoMap',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/png',
                 url: 'https://a.tile.opentopomap.org/${z}/${x}/${y}.png',
                 attribution: {
@@ -463,7 +492,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Stamen Toner',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/png',
                 url: 'https://stamen-tiles.a.ssl.fastly.net/toner/${z}/${x}/${y}.png',
                 attribution: {
@@ -476,7 +505,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Stamen Terrain',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/png',
                 url: 'https://stamen-tiles.a.ssl.fastly.net/terrain/${z}/${x}/${y}.png',
                 attribution: {
@@ -493,7 +522,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Stamen Watercolor',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/png',
                 url: 'https://stamen-tiles.a.ssl.fastly.net/watercolor/${z}/${x}/${y}.png',
                 attribution: {
@@ -510,7 +539,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.WMTSSource({
                 name: 'ArcGIS Terrain',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/jpg',
                 url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/',
                 attribution: {
@@ -524,7 +553,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Google Map - Roadmap',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/jpg',
                 url: 'https://mt1.google.com/vt/lyrs=m&x=${x}&y=${y}&z=${z}',
                 attribution: {
@@ -537,7 +566,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Google Map - Altered Roadmap',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/jpg',
                 url: 'https://mt1.google.com/vt/lyrs=r&x=${x}&y=${y}&z=${z}',
                 attribution: {
@@ -550,7 +579,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Google Map - Satellite Only',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/jpg',
                 url: 'https://mt1.google.com/vt/lyrs=s&x=${x}&y=${y}&z=${z}',
                 attribution: {
@@ -563,7 +592,7 @@ export class DataGeo {
         this.viewColorLayers.push(new itowns.ColorLayer('ColorLayer', {
             source: new itowns.TMSSource({
                 name: 'Google Map - Hybrid',
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 format: 'image/jpg',
                 url: 'https://mt1.google.com/vt/lyrs=y&x=${x}&y=${y}&z=${z}',
                 attribution: {
@@ -587,7 +616,7 @@ export class DataGeo {
         this.viewElevationLayers.push(null);
         this.viewElevationLayers.push(new itowns.ElevationLayer('ElevationLayer', {
             source: new itowns.WMTSSource({
-                projection: 'EPSG:3857',
+                crs: 'EPSG:3857',
                 url: 'http://wxs.ign.fr/3ht7xcw6f7nciopo16etuqp2/geoportail/wmts',
                 name: 'Elevation',
                 tileMatrixSet: 'WGS84G',

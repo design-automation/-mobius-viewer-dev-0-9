@@ -221,6 +221,7 @@ export class DataThreejsLookAt extends DataThreejsSelect {
             }
             this.perspControls.update();
             this.orthoControls.update();
+            console.log(this.orthoControls)
         }
     }
 }

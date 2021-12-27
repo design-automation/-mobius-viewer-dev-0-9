@@ -13,7 +13,7 @@
         "@shared/*" : ["./app/shared/*"],
         "@views" : ["./app/views"],
         "@model-viewers": ["./app/mobius-viewer/viewers"],
-        "@services" : ["./app/services"],
+        "@services" : ["./app/shared/services"],
         "@modules" : ["./assets/core/modules"],
         "@modules/*" : ["./assets/core/modules/*"]
     }

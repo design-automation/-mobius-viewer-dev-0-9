@@ -6,6 +6,7 @@
   height: calc(100% - 31px);
   overflow-y: auto;
   overflow-x: auto;
+  border-bottom: 1px solid $color4;
 //   &.topo--container{
 //     height: 100%;
 //   }
@@ -311,7 +312,7 @@ table{
 }
 
 .btm--container{
-  position: relative;
+//   position: relative;
   height: $fsize3;
   position: absolute;
   display: flex;
@@ -397,7 +398,7 @@ table{
     flex-flow: row nowrap;
     justify-content: flex-end;
   }
-  #matPaginator{
+  .matPaginator{
     &.hide{
       display: none;
     }

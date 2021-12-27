@@ -1,4 +1,6 @@
 import { DataThreejs } from '../data/data.threejs';
+import { Injectable } from "@angular/core";
+@Injectable()
 export class ThreeJSViewerService {
     DataThreejs: DataThreejs;
     initRaycaster(event) {

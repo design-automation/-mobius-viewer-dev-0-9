@@ -1,0 +1,17 @@
+<div id='viewer-select-node-div'>
+    <div id="nodeSelect_slider" class="nodeSelect_slider" *ngIf='timelineEnabled == 1'>
+        <input type="range" id="nodeSelect_slider_input"
+            min="0" [max]=getMaxNodeSelect() step="1"
+            [style.width]=getSliderWidth()
+            [value]=timelineIndex (change)='changeNodeSlider($event)'
+            list="nodeSelect_datalist">
+        <datalist id="nodeSelect_datalist">
+            <option *ngFor='let time_point of timeline_groups' value={{time_point}} label={{time_point}}></option>
+        </datalist>
+    </div>
+    <div id="nodeSelect_dropdown" class="nodeSelect_dropdown" *ngIf='this.timelineEnabled == 2'>
+        <select  type="range" id="nodeSelect_dropdown_input" [value]=timelineValue (change)='changeNodeDropdown($event)'>
+            <option *ngFor='let time_point of timeline_groups' value={{time_point}} label={{time_point}}></option>
+        </select>
+    </div>
+</div>

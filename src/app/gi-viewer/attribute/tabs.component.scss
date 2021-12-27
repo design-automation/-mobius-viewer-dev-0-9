@@ -48,7 +48,7 @@
     background-color: #ececec;
     min-width: 85px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 500;
+    z-index: 3;
     top: 19px;
   }
   
@@ -96,7 +96,7 @@
     width: fit-content;
     transition: display 0.4s;
 
-    z-index: 99999999;
+    z-index: 101;
     background-color: $color6;
     border: 1px solid $color1;
     box-shadow: none;

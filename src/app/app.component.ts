@@ -1,15 +1,29 @@
 import { Component, Injector, Input,
     ViewChild, ViewContainerRef, ComponentFactoryResolver, OnDestroy, OnInit, DoCheck, HostListener, AfterViewInit } from '@angular/core';
-import { MatIconRegistry } from '@angular/material';
+import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
-import { Router } from '@angular/router';
-import { _parameterTypes } from '@assets/core/modules';
-import { Import, _EIODataFormat } from '@assets/core/modules/basic/io';
+import { _parameterTypes } from '@design-automation/mobius-sim-funcs';
 import { FileHandle } from './directives/dragDropDirective';
 import { DataService as GIDataService } from './gi-viewer/data/data.service';
 import { Viewers } from './model-viewers.config';
-import { DataService } from './services/data.service';
+import { DataService } from './shared/services/data.service';
 import { IView } from './view.interface';
+import {customLookControl, customWASDControl, keyboardControlComponent, movementControlComponent,
+    navAgentComponent, navMeshComponent, navSystem} from '@shared/utils';
+import * as icon_reg from '@assets/Icons/icon_reg.json';
+
+declare var AFRAME;
+function registerAframeComponents() {
+    if (AFRAME.components['custom-look-controls']) { return; }
+    AFRAME.registerSystem('nav', navSystem);
+    AFRAME.registerComponent('custom-wasd-controls', customWASDControl);
+    AFRAME.registerComponent('custom-look-controls', customLookControl);
+    AFRAME.registerComponent('nav-mesh', navMeshComponent);
+    AFRAME.registerComponent('nav-agent', navAgentComponent);
+    AFRAME.registerComponent('keyboard-controls', keyboardControlComponent);
+    AFRAME.registerComponent('movement-controls', movementControlComponent);
+}
+
 
 @Component({
   selector: 'app-root',
@@ -28,16 +42,26 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
     constructor(private matIconRegistry: MatIconRegistry, private domSanitizer: DomSanitizer,
         private injector: Injector, private r: ComponentFactoryResolver, private dataService: DataService,
         private giDataService: GIDataService) {
-        this.matIconRegistry.addSvgIcon('settings', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Settings.svg'));
-        this.matIconRegistry.addSvgIcon('select', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Select.svg'));
-        this.matIconRegistry.addSvgIcon('cZoom', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Zoom.svg'));
-        this.matIconRegistry.addSvgIcon('cControlCam', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/ControlCam.svg'));
-        this.matIconRegistry.addSvgIcon('cVisibility', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/visibility.svg'));
-        this.matIconRegistry.addSvgIcon('c3D Viewer', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/3D2.svg'));
-        this.matIconRegistry.addSvgIcon('cThree Geo Viewer', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Geo.svg'));
+        registerAframeComponents()
+        // this.matIconRegistry.addSvgIcon('settings', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Settings.svg'));
+        // this.matIconRegistry.addSvgIcon('select', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Select.svg'));
+        // this.matIconRegistry.addSvgIcon('cZoom', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Zoom.svg'));
+        // this.matIconRegistry.addSvgIcon('cControlCam', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/ControlCam.svg'));
+        // this.matIconRegistry.addSvgIcon('cVisibility', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/visibility.svg'));
+        // this.matIconRegistry.addSvgIcon('c3D Viewer', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/3D2.svg'));
+        // this.matIconRegistry.addSvgIcon('cThree Geo Viewer', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Geo.svg'));
+        this.registerIcons();
         const newModel = _parameterTypes.newFn();
         this.data = newModel;
     }
+
+    registerIcons() {
+        // @ts-ignore
+        icon_reg.default.data.forEach(
+            entry => this.matIconRegistry.addSvgIcon(entry.name, this.domSanitizer.bypassSecurityTrustResourceUrl(entry.url))
+        );
+    }
+
     /**
      * ngOnInit
      */
@@ -102,8 +126,8 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                         setTimeout(() => {
                             const giZoom = document.getElementById('zoomingfit');
                             if (giZoom) { giZoom.click(); }
-                            const cesiumZoom = document.getElementById('cesium_zoom_fit');
-                            if (cesiumZoom) { cesiumZoom.click(); }
+                            // const cesiumZoom = document.getElementById('cesium_zoom_fit');
+                            // if (cesiumZoom) { cesiumZoom.click(); }
                             this.setSpinner(false);
                         }, 50);
                 })
@@ -125,10 +149,13 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
      * createView
      * @param view
      */
-    createView(view: IView) {
+     createView(view: IView) {
         const component = view.component;
         const factory = this.r.resolveComponentFactory(component);
         const componentRef = factory.create(this.injector);
+        componentRef.instance['nodeIndex'] = 1;
+        componentRef.instance['data'] = this.data;
+        componentRef.instance['data'].setActiveSnapshot(1);
         /*
         if (view.name != 'Console'){
             componentRef.instance["data"] = this.data;
@@ -140,8 +167,17 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
      * updateView
      * @param view
      */
-    updateView(view: IView): void {
+     updateView(view: IView, viewCheck = false): void {
+        if (viewCheck && view.name === this.activeView.name) { return; }
         this.activeView = view;
+
+        if (this.views['VR Viewer']) {
+            (<HTMLElement> document.getElementById('save_aframe_camera')).click();
+            setTimeout(() => {
+                this.views['VR Viewer'].destroy();
+                this.views['VR Viewer'] = undefined;
+            }, 0);
+        }
 
         if ( this.views[ this.activeView.name ] === undefined) {
             this.views[ this.activeView.name ] = this.createView(view);
@@ -188,7 +224,6 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
             const fileReader = new FileReader();
             fileReader.onload = (e) => {
                 this.data = _parameterTypes.newFn();
-                // Import(this.data, <string> fileReader.result, _EIODataFormat.GI);
                 this.data.importGI(fileReader.result);
                 this.setSpinner(false);
             };
@@ -290,8 +325,8 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                 case 'zoom_to_fit':
                     const giZoom = document.getElementById('zoomingfit');
                     if (giZoom) { giZoom.click(); }
-                    const cesiumZoom = document.getElementById('cesium_zoom_fit');
-                    if (cesiumZoom) { cesiumZoom.click(); }
+                    // const cesiumZoom = document.getElementById('cesium_zoom_fit');
+                    // if (cesiumZoom) { cesiumZoom.click(); }
                     break;
             }
             const container = document.getElementById('dummy_container');
