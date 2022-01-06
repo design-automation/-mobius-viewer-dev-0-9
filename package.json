@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "config": {
     "dev_url": "https://design-automation.github.io/mobius-viewer/",
-    "prod_url": "https://design-automation.github.io/mobius-viewer-dev-0-7/"
+    "prod_url": "https://design-automation.github.io/mobius-viewer-dev-0-9/"
   },
   "scripts": {
     "ng": "ng",
