@@ -10,17 +10,18 @@
         <a-assets id='aframe_viewpoint_assets'>
         </a-assets>
 
-        <a-entity id='aframe_camera_rig' position='0 2 0' rotation='0 0 0' >
-            <a-camera id='aframe_look_camera' custom-look-controls wasd-controls="enabled:false" position='0 0 0'></a-camera>
-            <a-sky id='aframe_sky_background' radius='5000'></a-sky>
-            <a-sky id='aframe_sky_foreground' radius='1' transparent='true' visible='false'></a-sky>
-        </a-entity>
 
         <a-entity id='aframe_viewpoints' position='0 0 0'>
         </a-entity>
 
         <a-entity id='mobius_geom' shadow="receive: true" rotation="-90 0 0" position="0 0 0"></a-entity>
         <a-entity id='mobius_nav_mesh' visible="false" rotation="-90 0 0" position="0 0 0"  nav-mesh></a-entity>
+
+        <a-entity id='aframe_camera_rig' position='0 2 0' rotation='0 0 0' >
+            <a-camera id='aframe_look_camera' custom-look-controls wasd-controls="enabled:false" position='0 0 0'></a-camera>
+            <a-sky id='aframe_sky_background' radius='5000'></a-sky>
+            <a-sky id='aframe_sky_foreground' radius='1' transparent='true' visible='false'></a-sky>
+        </a-entity>
 
         <a-entity id='aframe_ambientLight' light='type: ambient; color: #EEE; intensity: 0.05' position='0 0 0'></a-entity>
         <a-entity id='aframe_hemisphereLight' light='type: hemisphere; color: #EEE; groundColor: #EEE; intensity: 0.05' position='0 0 0'></a-entity>

@@ -1,7 +1,8 @@
-import * as THREE from 'three';
-import { AframeSettings } from '../aframe-viewer.settings';
-import { Funcs, Model, GICommon } from '@design-automation/mobius-sim-funcs';
+import { Funcs, GICommon, Model } from '@design-automation/mobius-sim-funcs';
 import { processDownloadURL } from '@shared/utils/otherUtils';
+import * as THREE from 'three';
+
+import { AframeSettings } from '../aframe-viewer.settings';
 
 declare var AFRAME;
 const DEFAUT_CAMERA_POS = {
@@ -46,6 +47,9 @@ export class DataAframe {
     };
 
     private _currentPos = null;
+    private _Funcs;
+
+    private north_rotation = 0;
 
 
     // test file: https://raw.githubusercontent.com/design-automation/mobius-vr/master/assets/Street%20View%20360_1.jpg
@@ -58,6 +62,7 @@ export class DataAframe {
             this.vr.foreground_url = this.settings.vr.foreground_url;
             this.vr.foreground_rotation = this.settings.vr.foreground_rotation;
         }
+        this._Funcs = new Funcs();
     }
 
     onChanges(changes, threejsScene) {
@@ -180,8 +185,9 @@ export class DataAframe {
         const threeJSGroup = new AFRAME.THREE.Group();
         this.navMeshEnabled = false;
         try {
-            const allPgons = <string[]> Funcs.query.Get(this.model, Funcs.query._EEntType.PGON, null) ;
-            const attrib = <any> Funcs.attrib.Get(this.model, allPgons, 'vr_nav_mesh');
+            this._Funcs._setModel(this.model);
+            const allPgons = this._Funcs.query.Get('pg', null) ;
+            const attrib = <any> this._Funcs.attrib.Get(allPgons, 'vr_nav_mesh');
             if (attrib && attrib.length !== 0) {
                 this.navMeshEnabled = true;
             }
@@ -205,6 +211,25 @@ export class DataAframe {
                 }
             }
         }
+
+        // if there's a north attribute
+        if (this.model.modeldata.attribs.query.hasModelAttrib('north')) {
+
+            // get north attribute
+            const north_dir: any = this.model.modeldata.attribs.get.getModelAttribVal('north');
+
+            if (north_dir.constructor === [].constructor && north_dir.length === 2) {
+                // make the north vector and the default north vector
+                const model_cartesian = new THREE.Vector3(north_dir[0], north_dir[1], 0);
+                const north_cartesian = new THREE.Vector3(0, 1, 0);
+                let angle = north_cartesian.angleTo(model_cartesian);
+                if (north_cartesian.cross(model_cartesian).z < 0) {
+                    angle = -angle;
+                }
+                this.north_rotation = angle * 180 / Math.PI;
+            }
+        }
+
         threeJSGroup.name = 'mobius_geom';
         const entity = document.getElementById('mobius_geom');
         if (entity) {
@@ -364,7 +389,7 @@ export class DataAframe {
                 assetEnt.appendChild(imgEnt);
                 imgEnt.addEventListener('load', postloadSkyBGImg);
 
-                skyBG.setAttribute('rotation', `0 ${90 + this.vr.background_rotation} 0`);
+                skyBG.setAttribute('rotation', `0 ${90 + this.vr.background_rotation + this.north_rotation} 0`);
             });
             if (this.vr.foreground_url) {
                 const fgUrl = processDownloadURL(this.vr.foreground_url);
@@ -396,13 +421,14 @@ export class DataAframe {
                     assetEnt.appendChild(imgEnt);
                     imgEnt.addEventListener('load', postloadSkyFGImg);
 
-                    skyFG.setAttribute('rotation', `0 ${90 + this.vr.foreground_rotation} 0`);
+                    skyFG.setAttribute('rotation', `0 ${90 + this.vr.foreground_rotation + this.north_rotation} 0`);
                     skyFG.setAttribute('visible', 'true');
                 });
             } else {
                 skyFG.setAttribute('visible', 'false');
             }
         } else {
+            skyBG.setAttribute('rotation', `0 0 0`);
             skyFG.setAttribute('visible', 'false');
         }
 
@@ -424,7 +450,8 @@ export class DataAframe {
                 position: new AFRAME.THREE.Vector3(),
                 rotation: camEl.getAttribute('rotation')
             };
-            rigEl.object3D.getWorldPosition(camera_pos.position);
+            // rigEl.object3D.getWorldPosition(camera_pos.position);
+            camera_pos.position.copy(rigEl.getAttribute('position'));
             camera_pos.position.z =  - camera_pos.position.z;
             camera_pos.position.y = this.settings.camera.position.y;
             camera_pos.rotation.y = 0 - camera_pos.rotation.y;
@@ -437,9 +464,11 @@ export class DataAframe {
 
     updateCamPos() {
         try {
-            const pts = <string[]> Funcs.query.Get(this.model, Funcs.query._EEntType.POINT, null);
-            const pos = Funcs.attrib.Get(this.model, Funcs.query.Get(this.model, Funcs.query._EEntType.POSI, pts), 'xyz');
-            const ptAttribs = Funcs.attrib.Get(this.model, pts, 'vr_hotspot');
+            this._Funcs._setModel(this.model);
+            const pts = <string[]> this._Funcs.query.Get('pt', null);
+            const pos = this._Funcs.attrib.Get(this._Funcs.query.Get('ps', pts), 'xyz');
+            const ptAttribs = this._Funcs.attrib.Get(pts, 'vr_hotspot');
+            this._currentPos = null;
             this.camPosList = [
                 {
                 name: 'Default',
@@ -456,10 +485,9 @@ export class DataAframe {
                 cam.pos = pos[i];
                 if (!cam.name) { cam.name = pts[i]; }
                 this.camPosList.push(cam);
-                // this.camPosList.splice(this.camPosList.length - 1, 0, cam);
             }
             const viewpointsList = document.getElementById('aframe_viewpoints');
-            const newPointNum = this.camPosList.length - 2 - (viewpointsList.children.length / 2);
+            const newPointNum = this.camPosList.length - 1 - (viewpointsList.children.length / 2);
             if (newPointNum > 0) {
                 for (let j = 0; j < newPointNum; j++) {
                     const newPoint_tetra = document.createElement('a-tetrahedron');
@@ -482,7 +510,7 @@ export class DataAframe {
                 const pointPos = viewpointsList.children[k];
                 pointPos.setAttribute('visible', 'false');
                 const camPos = this.camPosList[Math.trunc(k / 2) + 1];
-                if (Math.trunc(k / 2) + 2 >= this.camPosList.length) {
+                if (Math.trunc(k / 2) + 1 >= this.camPosList.length) {
                     continue;
                 } else if (camPos.background_url) {
                     if (k % 2 === 0) { continue; }
@@ -557,17 +585,13 @@ export class DataAframe {
         const skyBG = document.getElementById('aframe_sky_background');
         const skyFG = document.getElementById('aframe_sky_foreground');
         const viewpointsList = <any> document.getElementById('aframe_viewpoints');
-        // skyBG.setAttribute('rotation', '0 0 0');
-        // skyFG.setAttribute('rotation', '0 0 0');
         this.staticCamOn = false;
         if (!posDetails || !posDetails.pos || posDetails.pos.length < 2) {
             if (this._currentPos !== null) {
                 this._currentPos = null;
                 this.updateSky();
-                // skyBG.setAttribute('rotation', '0 0 0');
-                // skyFG.setAttribute('rotation', '0 0 0');
                 if (viewpointsList) {
-                    for (let i = 1; i < (this.camPosList.length - 1); i++) {
+                    for (let i = 1; i < this.camPosList.length; i++) {
                         const extra = this.camPosList[i].background_url ? 1 : 0;
                         viewpointsList.children[(i - 1) * 2 + extra].setAttribute('visible', true);
                     }
@@ -578,7 +602,9 @@ export class DataAframe {
         this._currentPos = posDetails.name;
 
         if (viewpointsList) {
-            viewpointsList.children.forEach(vp => vp.setAttribute('visible', false));
+            for (const vp of viewpointsList.children) {
+                vp.setAttribute('visible', false);
+            }
         }
         const disablePosInput = <HTMLInputElement> document.getElementById('aframe-disablePosUpdate');
         if (disablePosInput) {
@@ -609,6 +635,19 @@ export class DataAframe {
             }
         }
 
+        let bgCorrection = [0, 0]
+        // if there's a adjustment attribute
+        if (posDetails.correction ) {
+            let adj_dir = posDetails.correction[0];
+            const adj_rot = posDetails.correction[1];
+            adj_dir = adj_dir + (90 + posDetails.background_rotation + this.north_rotation);
+
+            const rad_dir = adj_dir * Math.PI / 180;
+            const rotX = adj_rot * Math.cos(rad_dir)
+            const rotY = adj_rot * Math.sin(rad_dir)
+            bgCorrection = [rotX, rotY]
+        }
+
         if (posDetails.background_url) {
             skyBG.setAttribute('src', '');
             skyBG.setAttribute('rotation', '0 0 0');
@@ -637,7 +676,11 @@ export class DataAframe {
                 imgEnt.setAttribute('src', bgUrl);
                 assetEnt.appendChild(imgEnt);
                 imgEnt.addEventListener('load', postloadSkyBGImg);
-                skyBG.setAttribute('rotation', `0 ${90 + posDetails.background_rotation} 0`);
+                skyBG.setAttribute('rotation',
+                    `${bgCorrection[0]} ` +
+                    `${90 + posDetails.background_rotation + this.north_rotation} ` +
+                    `${bgCorrection[1]}`
+                );
             });
         } else {
             this.updateSky();
@@ -671,7 +714,10 @@ export class DataAframe {
                 imgEnt.setAttribute('src', fgUrl);
                 assetEnt.appendChild(imgEnt);
                 imgEnt.addEventListener('load', postloadSkyFGImg);
-                skyFG.setAttribute('rotation', `0 ${90 + posDetails.foreground_rotation} 0`);
+                skyFG.setAttribute('rotation',
+                `${bgCorrection[0]} ` +
+                `${90 + posDetails.foreground_rotation + this.north_rotation} ` +
+                `${bgCorrection[1]}`);
                 skyFG.setAttribute('visible', 'true');
             });
         } else {

@@ -1,17 +1,25 @@
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Model } from '@design-automation/mobius-sim-funcs';
-// import @angular stuff
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
-// import app services
 import { DataService as MD } from '@services';
-import { ColorPickerService } from 'ngx-color-picker';
-import { DataAframeService } from './data/data.aframe.service';
-import { DataService as ThreeJSDataService } from '../gi-viewer/data/data.service';
-import { AframeSettings, aframe_default_settings } from './aframe-viewer.settings';
-import { DefaultSettings as DefaultGISettings } from '../gi-viewer/gi-viewer.settings';
-import {customLookControl, customWASDControl, keyboardControlComponent, movementControlComponent,
-    navAgentComponent, navMeshComponent, navSystem} from '@shared/utils';
 import { ModalService } from '@shared/services/modal-window.service';
+import {
+    customLookControl,
+    customWASDControl,
+    keyboardControlComponent,
+    movementControlComponent,
+    navAgentComponent,
+    navMeshComponent,
+    navSystem,
+} from '@shared/utils';
+import { ColorPickerService } from 'ngx-color-picker';
 
+import { DataService as ThreeJSDataService } from '../gi-viewer/data/data.service';
+import { DefaultSettings as DefaultGISettings } from '../gi-viewer/gi-viewer.settings';
+import { aframe_default_settings, AframeSettings } from './aframe-viewer.settings';
+import { DataAframeService } from './data/data.aframe.service';
+
+// import @angular stuff
+// import app services
 declare var AFRAME;
 function registerAframeComponents() {
     if (AFRAME.components['custom-look-controls']) { return; }
@@ -116,7 +124,14 @@ export class AframeViewerComponent implements OnInit, OnDestroy {
                 this.snapPosition(this.current_camera_pos);
             }
             if ((<HTMLInputElement>cameraUpdateData.children[2]).value) {
-                this.current_camera_rot = (<HTMLInputElement>cameraUpdateData.children[3]).value;
+                let rotVal = Number((<HTMLInputElement>cameraUpdateData.children[3]).value)
+                while (rotVal < -180) {
+                    rotVal += 360
+                }
+                while (rotVal > 180) {
+                    rotVal -= 360
+                }
+                this.current_camera_rot = rotVal.toFixed(2);
                 (<HTMLInputElement>cameraUpdateData.children[2]).value = null;
             }
         }, 100);
@@ -147,7 +162,7 @@ export class AframeViewerComponent implements OnInit, OnDestroy {
                 for (let i = 0 ; i < this.camPosList.length; i ++) {
                     if (this.dataService.aframeCamPos === this.camPosList[i].name) {
                         this.selectedCamPos = i;
-                        this.changePos(i);
+                        // this.changePos(i);
                         posCheck = true;
                     }
                 }
@@ -159,7 +174,7 @@ export class AframeViewerComponent implements OnInit, OnDestroy {
                         this.selectedCamPos = 0;
                         this.dataService.aframeCamPos = 'Default';
                     }
-                    this.changePos(this.selectedCamPos);
+                    // this.changePos(this.selectedCamPos);
                 }
             }
             if (this.camPosList.length === 1) {
@@ -235,37 +250,37 @@ export class AframeViewerComponent implements OnInit, OnDestroy {
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_pos.x = Math.round(value);
+                this.temp_camera_pos.x = value;
                 break;
             case 'camera.pos_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_pos.y = Math.round(value);
+                this.temp_camera_pos.y = value;
                 break;
             case 'camera.pos_z':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_pos.z = Math.round(value);
+                this.temp_camera_pos.z = value;
                 break;
             case 'camera.rot_x':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_rot.x = Math.round(value);
+                this.temp_camera_rot.x = value;
                 break;
             case 'camera.rot_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_rot.y = Math.round(value);
+                this.temp_camera_rot.y = value;
                 break;
             case 'camera.rot_z':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_rot.z = Math.round(value);
+                this.temp_camera_rot.z = value;
                 break;
             case 'camera.get_camera_pos':
                 const cam_pos_data = this.dataService.getAframeData().getCameraPos();
@@ -343,31 +358,31 @@ export class AframeViewerComponent implements OnInit, OnDestroy {
                 if (isNaN(value)) {
                     return;
                 }
-                this.vr.camera_position.x = Math.round(value);
+                this.vr.camera_position.x = value;
                 break;
             case 'vr.camera.pos_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.vr.camera_position.y = Math.round(value);
+                this.vr.camera_position.y = value;
                 break;
             case 'vr.camera.pos_z':
                 if (isNaN(value)) {
                     return;
                 }
-                this.vr.camera_position.z = Math.round(value);
+                this.vr.camera_position.z = value;
                 break;
             case 'vr.camera.rot_x':
                 if (isNaN(value)) {
                     return;
                 }
-                this.vr.camera_rotation.x = Math.round(value);
+                this.vr.camera_rotation.x = value;
                 break;
             case 'vr.camera.rot_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.vr.camera_rotation.y = Math.round(value);
+                this.vr.camera_rotation.y = value;
                 break;
             case 'camera.get_vr_camera_pos':
                 const vr_cam_pos_data = this.dataService.getAframeData().getCameraPos();

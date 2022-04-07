@@ -376,4 +376,7 @@
         <button (click)="closeModal('aframe_settings_modal');" class='filebtn closebtn setting'>Cancel</button>
         <button (click)="resetToDefault();" class='filebtn closebtn setting' style="float: right;">Default</button>
     </modal-window>
+    <div class='nodeSelect_container'>
+        <viewer-select-node [model]='data' [nodeIndex]='nodeIndex'></viewer-select-node>
+    </div>
 </div>

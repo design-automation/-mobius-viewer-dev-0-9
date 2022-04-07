@@ -1,22 +1,20 @@
-import { AngularSplitModule } from 'angular-split';
-import { NgxPaginationModule} from 'ngx-pagination';
-// import @angular stuff
-import { NgModule, ModuleWithProviders, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { MatSliderModule } from '@angular/material/slider';
 import { CommonModule } from '@angular/common';
+import { CUSTOM_ELEMENTS_SCHEMA, ModuleWithProviders, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatTooltipModule} from '@angular/material/tooltip';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
-import { MatExpansionModule} from '@angular/material/expansion';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ModalService } from '@shared/services/modal-window.service';
+import { SharedViewerModule } from '@shared/shared-viewer.module';
+import { AngularSplitModule } from 'angular-split';
 import { ColorPickerModule } from 'ngx-color-picker';
 
-// import app components
 import { AframeViewerComponent } from './aframe-viewer.component';
-
 import { AframeMainComponent } from './main/aframe-main.component';
-import { SharedViewerModule } from '@shared/shared-viewer.module';
-import { ModalService } from '@shared/services/modal-window.service';
 
+// import @angular stuff
+// import app components
 /**
  * GIViewer
  * A viewer for Geo-Info models.
@@ -34,7 +32,6 @@ import { ModalService } from '@shared/services/modal-window.service';
         AngularSplitModule,
         MatSliderModule,
         MatIconModule,
-        NgxPaginationModule,
         MatExpansionModule,
         MatTooltipModule,
         FormsModule,

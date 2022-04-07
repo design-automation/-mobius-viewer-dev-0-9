@@ -107,34 +107,93 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
     ngAfterViewInit() {
         console.log(window.location);
         const urlSplit = new URLSearchParams(window.location.search);
+        const promiseList = [null, null];
         if (urlSplit.get('file')) {
             try {
                 this.setSpinner(true);
-                fetch(urlSplit.get('file')).then(
-                    res => {
-                        if (!res.ok) { return null; }
-                        return res.text();
-                }).then(
-                    resultText => {
-                        if (!resultText) {
-                            this.setSpinner(false);
-                            return;
-                        }
-                        const newModel = _parameterTypes.newFn();
-                        newModel.importGI(resultText);
-                        this.data = newModel;
-                        setTimeout(() => {
-                            const giZoom = document.getElementById('zoomingfit');
-                            if (giZoom) { giZoom.click(); }
-                            // const cesiumZoom = document.getElementById('cesium_zoom_fit');
-                            // if (cesiumZoom) { cesiumZoom.click(); }
-                            this.setSpinner(false);
-                        }, 50);
-                })
+                const p = fetch(urlSplit.get('file')).then(res => {
+                    if (!res.ok) { return null; }
+                    return res.text();
+                });
+                promiseList[0] = p
             } catch (ex) {
                 this.setSpinner(false);
             }
         }
+        if (urlSplit.get('context')) {
+            try {
+                this.setSpinner(true);
+                const p = fetch(urlSplit.get('context')).then(res => {
+                    if (!res.ok) { return null; }
+                    return res.text();
+                });
+                promiseList[1] = p
+            } catch (ex) {
+                this.setSpinner(false);
+            }
+        }
+        setTimeout(async () => {
+            const newModel = _parameterTypes.newFn();
+            for (const p of promiseList) {
+                const resultText = await p;
+                if (!resultText) { continue; }
+                newModel.importSIM(resultText);
+            }
+            this.data = newModel;
+            setTimeout(() => {
+                const giZoom = document.getElementById('zoomingfit');
+                if (giZoom) { giZoom.click(); }
+                this.setSpinner(false);
+            }, 50);
+        }, 0);
+
+
+        // if (urlSplit.get('file')) {
+        //     try {
+        //         this.setSpinner(true);
+        //         fetch(urlSplit.get('file')).then(
+        //             res => {
+        //                 if (!res.ok) { return null; }
+        //                 return res.text();
+        //         }).then(
+        //             resultText => {
+        //                 if (!resultText) {
+        //                     this.setSpinner(false);
+        //                     return;
+        //                 }
+        //                 const newModel = _parameterTypes.newFn();
+        //                 newModel.importSIM(resultText);
+        //                 this.data = newModel;
+        //                 setTimeout(() => {
+        //                     const giZoom = document.getElementById('zoomingfit');
+        //                     if (giZoom) { giZoom.click(); }
+        //                     this.setSpinner(false);
+        //                 }, 50);
+        //         })
+        //     } catch (ex) {
+        //         this.setSpinner(false);
+        //     }
+        // }
+        // if (urlSplit.get('context')) {
+        //     try {
+        //         fetch(urlSplit.get('context')).then(
+        //             res => {
+        //                 if (!res.ok) { return null; }
+        //                 return res.text();
+        //         }).then(
+        //             resultText => {
+        //                 if (!resultText) {
+        //                     return;
+        //                 }
+        //                 this.data.importSIM(resultText);
+        //                 setTimeout(() => {
+        //                     const giZoom = document.getElementById('zoomingfit');
+        //                     if (giZoom) { giZoom.click(); }
+        //                 }, 50);
+        //         })
+        //     } catch (ex) {
+        //     }
+        // }
         setTimeout(() => {
             const container = document.getElementById('dummy_container');
             if (container.childElementCount === 0) {
@@ -224,7 +283,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
             const fileReader = new FileReader();
             fileReader.onload = (e) => {
                 this.data = _parameterTypes.newFn();
-                this.data.importGI(fileReader.result);
+                this.data.importSIM(fileReader.result);
                 this.setSpinner(false);
             };
             fileReader.readAsText(f.file, 'json/applications');
@@ -269,11 +328,11 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                     }
                     let results;
                     if (event.data.model) {
-                        newModel.importGI(event.data.model);
+                        newModel.importSIM(event.data.model);
                     }
                     await Promise.all(allGIData).then((r) => results = r);
                     for (const data of results) {
-                        newModel.importGI(data);
+                        newModel.importSIM(data);
                     }
                     this.data = newModel;
                     if (event.data.keepSettings || event.data.keepCamera) {
