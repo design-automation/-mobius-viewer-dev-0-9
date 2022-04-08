@@ -137,7 +137,11 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
             for (const p of promiseList) {
                 const resultText = await p;
                 if (!resultText) { continue; }
-                newModel.importSIM(resultText);
+                if (resultText.startsWith('{"type":"GIJson"')) {
+                    newModel.importGI(resultText)
+                } else {
+                    newModel.importSIM(resultText);
+                }
             }
             this.data = newModel;
             setTimeout(() => {
@@ -283,7 +287,12 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
             const fileReader = new FileReader();
             fileReader.onload = (e) => {
                 this.data = _parameterTypes.newFn();
-                this.data.importSIM(fileReader.result);
+                if ((<string>fileReader.result).startsWith('{"type":"GIJson"')) {
+                    this.data.importGI(fileReader.result)
+                } else {
+                    this.data.importSIM(fileReader.result);
+                }
+
                 this.setSpinner(false);
             };
             fileReader.readAsText(f.file, 'json/applications');
@@ -328,11 +337,19 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                     }
                     let results;
                     if (event.data.model) {
-                        newModel.importSIM(event.data.model);
+                        if ((<string>event.data.model).startsWith('{"type":"GIJson"')) {
+                            newModel.importGI(event.data.model)
+                        } else {
+                            newModel.importSIM(event.data.model);
+                        }
                     }
                     await Promise.all(allGIData).then((r) => results = r);
                     for (const data of results) {
-                        newModel.importSIM(data);
+                        if ((<string>data).startsWith('{"type":"GIJson"')) {
+                            newModel.importGI(data)
+                        } else {
+                            newModel.importSIM(data);
+                        }
                     }
                     this.data = newModel;
                     if (event.data.keepSettings || event.data.keepCamera) {
