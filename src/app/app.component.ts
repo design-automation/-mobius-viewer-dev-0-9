@@ -198,15 +198,15 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         //     } catch (ex) {
         //     }
         // }
-        setTimeout(() => {
-            const container = document.getElementById('dummy_container');
-            if (container.childElementCount === 0) {
-                const publishElement = document.createElement('div');
-                publishElement.setAttribute('id', 'published');
-                container.appendChild(publishElement);
-                this.dataService.attribVal = 0;
-            }
-        }, 0);
+        // setTimeout(() => {
+        //     const container = document.getElementById('dummy_container');
+        //     if (container.childElementCount === 0) {
+        //         const publishElement = document.createElement('div');
+        //         publishElement.setAttribute('id', 'published');
+        //         container.appendChild(publishElement);
+        //         this.dataService.attribVal = 0;
+        //     }
+        // }, 0);
     }
     /**
      * createView
@@ -309,6 +309,10 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         this.setSpinner(true);
         try {
             switch (event.data.messageType) {
+                case 'ping':
+                    console.log('ping message')
+                    this.setSpinner(false);
+                    return;
                 case 'update':
                     if (!event.data.url && !event.data.model) {
                         this.setSpinner(false);
@@ -405,18 +409,18 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                     // if (cesiumZoom) { cesiumZoom.click(); }
                     break;
             }
-            const container = document.getElementById('dummy_container');
-            if (!event.data.showAttrTable) {
-                if (container.childElementCount === 0) {
-                    const publishElement = document.createElement('div');
-                    publishElement.setAttribute('id', 'published');
-                    container.appendChild(publishElement);
-                    this.dataService.attribVal = 0;
-                }
-            } else if (container.childElementCount > 0) {
-                container.removeChild(container.firstElementChild);
-                this.dataService.attribVal = 34;
-            }
+            // const container = document.getElementById('dummy_container');
+            // if (!event.data.showAttrTable) {
+            //     if (container.childElementCount === 0) {
+            //         const publishElement = document.createElement('div');
+            //         publishElement.setAttribute('id', 'published');
+            //         container.appendChild(publishElement);
+            //         this.dataService.attribVal = 0;
+            //     }
+            // } else if (container.childElementCount > 0) {
+            //     container.removeChild(container.firstElementChild);
+            //     this.dataService.attribVal = 34;
+            // }
         } catch( ex ) {}
         this.setSpinner(false);
     }

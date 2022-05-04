@@ -1,28 +1,25 @@
-import { AngularSplitModule } from 'angular-split';
-import { NgxPaginationModule} from 'ngx-pagination';
-// import @angular stuff
-import { NgModule, ModuleWithProviders } from '@angular/core';
-import { MatSliderModule } from '@angular/material/slider';
 import { CommonModule } from '@angular/common';
+import { ModuleWithProviders, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatTooltipModule} from '@angular/material/tooltip';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
-import { MatExpansionModule} from '@angular/material/expansion';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { ModalService } from '@shared/services/modal-window.service';
+import { SharedViewerModule } from '@shared/shared-viewer.module';
+import { AngularSplitModule } from 'angular-split';
 import { ColorPickerModule } from 'ngx-color-picker';
 
-import { AttributeModule } from './attribute/attribute.module';
-
-// import app components
-import { GIViewerComponent } from './gi-viewer.component';
-import { ThreejsViewerComponent } from './threejs/threejs-viewer.component';
 import { AttributeComponent } from './attribute/attribute.component';
-
+import { AttributeModule } from './attribute/attribute.module';
 import { ATabComponent } from './attribute/tab.component';
 import { ATabsComponent } from './attribute/tabs.component';
+import { GIViewerComponent } from './gi-viewer.component';
+import { ThreejsViewerComponent } from './threejs/threejs-viewer.component';
 import { ThreeJSViewerService } from './threejs/threejs-viewer.service';
-import { SharedViewerModule } from '@shared/shared-viewer.module';
-import { ModalService } from '@shared/services/modal-window.service';
 
+// import @angular stuff
+// import app components
 /**
  * GIViewer
  * A viewer for Geo-Info models.
@@ -43,7 +40,6 @@ import { ModalService } from '@shared/services/modal-window.service';
         AngularSplitModule,
         MatSliderModule,
         MatIconModule,
-        NgxPaginationModule,
         MatExpansionModule,
         MatTooltipModule,
         AttributeModule,

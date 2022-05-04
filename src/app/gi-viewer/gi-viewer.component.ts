@@ -290,19 +290,19 @@ export class GIViewerComponent implements OnInit, OnDestroy {
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_pos.x = Math.round(value);
+                this.temp_camera_pos.x = value;
                 break;
             case 'camera.pos_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_pos.y = Math.round(value);
+                this.temp_camera_pos.y = value;
                 break;
             case 'camera.pos_z':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_camera_pos.z = Math.round(value);
+                this.temp_camera_pos.z = value;
                 break;
             case 'camera.get_camera_pos':
                 this.temp_camera_pos = this.dataService.getThreejsScene().camera.position;
@@ -312,19 +312,19 @@ export class GIViewerComponent implements OnInit, OnDestroy {
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_target_pos.x = Math.round(value);
+                this.temp_target_pos.x = value;
                 break;
             case 'camera.target_y':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_target_pos.y = Math.round(value);
+                this.temp_target_pos.y = value;
                 break;
             case 'camera.target_z':
                 if (isNaN(value)) {
                     return;
                 }
-                this.temp_target_pos.z = Math.round(value);
+                this.temp_target_pos.z = value;
                 break;
             case 'camera.get_target_pos':
                 this.temp_target_pos = this.dataService.getThreejsScene().perspControls.target;

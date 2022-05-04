@@ -1,7 +1,6 @@
 {
-    "/function": {
-      "target": "http://172.16.28.245:8080",
-      "secure": false
-    }
+  "/function": {
+    "target": "http://172.16.28.245:8080",
+    "secure": false
   }
-  
+}

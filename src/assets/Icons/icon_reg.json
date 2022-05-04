@@ -44,6 +44,7 @@
         { "name": "icon_up_arrow", "url": "assets/Icons/arrowup.svg"},
         { "name": "icon_dn_arrow", "url": "assets/Icons/arrowdown.svg"},
         { "name": "icon_ctrl_cam", "url": "assets/Icons/ControlCam.svg"},
-        { "name": "icon_help", "url": "assets/Icons/Help.svg"}
+        { "name": "icon_help", "url": "assets/Icons/Help.svg"},
+        { "name": "icon_visibility", "url": "assets/Icons/visibility_FILL1_wght400_GRAD0_opsz24.svg"}
     ]
 }

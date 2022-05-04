@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader';
 import { DataService } from '@services';
 import { ISettings } from './data.threejsSettings';
 
@@ -16,7 +17,8 @@ enum MaterialType {
     MeshPhongMaterial = 'MeshPhongMaterial',
     MeshPhysicalMaterial = 'MeshPhysicalMaterial'
 }
-const textFontLoader = new THREE.FontLoader();
+const textFontLoader = new FontLoader();
+
 /**
  * ThreejsScene Add
  */
@@ -471,7 +473,7 @@ export class DataThreejs extends DataThreejsLookAt {
                         element.envMap = this.scene.background;
                     }
                     mat = new THREE.MeshPhysicalMaterial(element);
-                    mat.attenuationColor = mat.attenuationTint;
+                    mat.attenuationColor = mat.attenuationColor || mat.attenuationTint;
                 } else if (element.type === MaterialType.MeshLambertMaterial) {
                     delete element.type;
                     mat = new THREE.MeshLambertMaterial(element);
@@ -554,18 +556,24 @@ export class DataThreejs extends DataThreejsLookAt {
                 const mat = new THREE.LineDashedMaterial({
                     color: element.color || 0,
                     vertexColors: true,
+                    linewidth: element.linewidth ||  1,
                     scale: 1,
                     dashSize: 1000,
                     gapSize: 0,
+                    linecap: 'round', // ignored by WebGLRenderer
+                    linejoin: 'round' // ignored by WebGLRenderer
                 });
                 material_arr.push(mat);
             } else {
                 const mat = new THREE.LineDashedMaterial({
                     color: element.color || 0,
+                    vertexColors: true,
+                    linewidth: element.linewidth ||  1,
                     scale: element.scale || 1,
                     dashSize: element.dashSize || 2,
-                    gapSize: element.gapSize || 1,
-                    vertexColors: true
+                    gapSize: element.gapSize !== null ? element.gapSize : 0,
+                    linecap: 'round', // ignored by WebGLRenderer
+                    linejoin: 'round' // ignored by WebGLRenderer
                 });
                 material_arr.push(mat);
             }
