@@ -7,7 +7,7 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 172.16.28.245",
+    "start": "ng serve --host 0.0.0.0",
     "startP": "ng serve",
     "build": "ng build",
     "test": "ng test",

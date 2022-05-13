@@ -142,7 +142,24 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                 } else {
                     newModel.importSIM(resultText);
                 }
+                this.turnOffOverlay();
             }
+            const urlSplit = new URLSearchParams(window.location.search);
+            if (urlSplit.get('defaultViewer')) {
+                const defaultViewer = urlSplit.get('defaultViewer');
+                let activeView;
+                if (defaultViewer === 'geo') {
+                    activeView = this.Viewers[1];
+                } else if (defaultViewer === 'vr') {
+                    activeView = this.Viewers[2];
+                }
+                if (activeView) {
+                    setTimeout(() => {
+                        this.updateView(activeView)
+                    }, 0);
+                }
+            }
+
             this.data = newModel;
             setTimeout(() => {
                 const giZoom = document.getElementById('zoomingfit');
@@ -278,6 +295,10 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         }
     }
 
+    turnOffOverlay() {
+        document.getElementById('dragdropOverlay').style.display = 'none';
+    }
+
 
     async filesDropped(files: FileHandle[]) {
         if (files.length === 0) { return; }
@@ -292,7 +313,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                 } else {
                     this.data.importSIM(fileReader.result);
                 }
-
+                this.turnOffOverlay();
                 this.setSpinner(false);
             };
             fileReader.readAsText(f.file, 'json/applications');
@@ -346,6 +367,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                         } else {
                             newModel.importSIM(event.data.model);
                         }
+                        this.turnOffOverlay();
                     }
                     await Promise.all(allGIData).then((r) => results = r);
                     for (const data of results) {
@@ -354,6 +376,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                         } else {
                             newModel.importSIM(data);
                         }
+                        this.turnOffOverlay();
                     }
                     this.data = newModel;
                     if (event.data.keepSettings || event.data.keepCamera) {

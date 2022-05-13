@@ -62,13 +62,47 @@ export class DataGeo {
         this._getTerrains();
     }
 
+    private extractGeoloc() {
+        this.longitude = LONGLAT[0];
+        this.latitude = LONGLAT[1];
+        this.elevation = 0;
+        if (!this.model || !this.model.modeldata) { return; }
+        if (this.model.modeldata.attribs.query.hasModelAttrib('geolocation')) {
+            const geoloc: any = this.model.modeldata.attribs.get.getModelAttribVal('geolocation');
+            const long_value  = geoloc.longitude;
+            if (typeof long_value !== 'number') {
+                throw new Error('Longitude attribute must be a number.');
+            }
+            this.longitude = long_value as number;
+            if (this.longitude < -180 || this.longitude > 180) {
+                throw new Error('Longitude attribute must be between -180 and 180.');
+            }
+            const lat_value = geoloc.latitude;
+            if (typeof lat_value !== 'number') {
+                throw new Error('Latitude attribute must be a number');
+            }
+            this.latitude = lat_value as number;
+            if (this.latitude < 0 || this.latitude > 90) {
+                throw new Error('Latitude attribute must be between 0 and 90.');
+            }
+            if (geoloc.elevation) {
+                const ele_value = geoloc.elevation;
+                if (typeof ele_value !== 'number') {
+                    throw new Error('Elevation attribute must be a number');
+                }
+                this.elevation = ele_value as number;
+            }
+        }
+    }
+
     // matrix points from xyz to long lat
     /**
      *
      */
     public createGeoViewer(threejsScene) {
+        this.extractGeoloc()
         const placement = {
-            coord: new itowns.Coordinates('EPSG:4326', LONGLAT[0], LONGLAT[1]),
+            coord: new itowns.Coordinates('EPSG:4326', this.longitude, this.latitude),
             range: 1000,
             tilt: 50
         };
@@ -254,35 +288,7 @@ export class DataGeo {
             }
         }
 
-        this.longitude = LONGLAT[0];
-        this.latitude = LONGLAT[1];
-        this.elevation = 0;
-        if (this.model.modeldata.attribs.query.hasModelAttrib('geolocation')) {
-            const geoloc: any = this.model.modeldata.attribs.get.getModelAttribVal('geolocation');
-            const long_value  = geoloc.longitude;
-            if (typeof long_value !== 'number') {
-                throw new Error('Longitude attribute must be a number.');
-            }
-            this.longitude = long_value as number;
-            if (this.longitude < -180 || this.longitude > 180) {
-                throw new Error('Longitude attribute must be between -180 and 180.');
-            }
-            const lat_value = geoloc.latitude;
-            if (typeof lat_value !== 'number') {
-                throw new Error('Latitude attribute must be a number');
-            }
-            this.latitude = lat_value as number;
-            if (this.latitude < 0 || this.latitude > 90) {
-                throw new Error('Latitude attribute must be between 0 and 90.');
-            }
-            if (geoloc.elevation) {
-                const ele_value = geoloc.elevation;
-                if (typeof ele_value !== 'number') {
-                    throw new Error('Elevation attribute must be a number');
-                }
-                this.elevation = ele_value as number;
-            }
-        }
+        this.extractGeoloc();
 
         this.camTarget = new itowns.Coordinates('EPSG:4326', this.longitude, this.latitude, this.elevation);
 
@@ -294,6 +300,7 @@ export class DataGeo {
         threeJSGroup.position.z += 0.1;
         threeJSGroup.lookAt(new THREE.Vector3(0, 0, 0));
         threeJSGroup.rotateY(Math.PI);
+
 
         // if there's a north attribute
         if (this.model.modeldata.attribs.query.hasModelAttrib('north')) {
@@ -329,7 +336,7 @@ export class DataGeo {
         lightTarget.updateMatrixWorld(true);
         this.view.scene.add(lightTarget);
 
-        // this.lookAtObj(threejsScene);
+        this.lookAtObj(threejsScene);
 
         // this.view.scene.add(lighting);
         if (updatePos) {
@@ -403,7 +410,6 @@ export class DataGeo {
         // camTarget.altitude = scale * 1.5;
         // lighting.position.copy(camTarget.as(this.view.referenceCrs));
         cam.up.set(0, 0, 1);
-        console.log('scale', this.scale)
         cam.left = -this.scale;
         cam.right = this.scale;
         cam.top = this.scale;
