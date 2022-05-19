@@ -457,4 +457,16 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
             }
         }
     }
+
+    switchToPublish() {
+        const container = document.getElementById('dummy_container');
+        if (container.childElementCount === 0) {
+            const publishElement = document.createElement('div');
+            publishElement.setAttribute('id', 'published');
+            container.appendChild(publishElement);
+        } else if (container.childElementCount > 0) {
+            container.removeChild(container.firstElementChild);
+        }
+    }
+
 }

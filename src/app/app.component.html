@@ -12,9 +12,10 @@
     <div class='content__panel'>
         <ng-container #vc></ng-container>
     </div>
-    <div id='dummy_container'></div>
+    <div id='dummy_container' class="hidden_obj"></div>
 </div>
 <div id="dragdropOverlay" class="text-overlay"> 
     <h1>Drag and Drop a *.SIM or *.GI file to load model</h1>
 </div>
 <spinner></spinner>
+<button id='switch_publish' class="hidden_obj" (click)='switchToPublish()'></button>

@@ -157,9 +157,9 @@ export class DataGeo {
         }
         // const atmosphere = this.view.getLayerById('atmosphere');
         // atmosphere.setRealisticOn(true);
-        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.15);
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.25);
         this.view.scene.add(ambientLight);
-        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.15);
+        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.25);
         this.view.scene.add(hemiLight);
 
         if (this.model && threejsScene.model && threejsScene.model === this.model) {
@@ -638,7 +638,7 @@ export class DataGeo {
         let radius = null;
         if (threejsScene._all_objs_sphere) {
             center = threejsScene._all_objs_sphere.center;
-            radius = threejsScene._all_objs_sphere.radius;
+            radius = threejsScene._all_objs_sphere.radius * 2 / 3;
             if (radius < 200) {
                 radius = 200;
             }
