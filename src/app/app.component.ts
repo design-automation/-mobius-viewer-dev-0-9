@@ -23,6 +23,13 @@ function registerAframeComponents() {
     AFRAME.registerComponent('keyboard-controls', keyboardControlComponent);
     AFRAME.registerComponent('movement-controls', movementControlComponent);
 }
+function importModel(model, model_string: string) {
+    if (model_string.startsWith('{"type":"GIJson"')) {
+        model.importGI(model_string)
+    } else {
+        model.importSIM(model_string);
+    }
+}
 
 
 @Component({
@@ -105,7 +112,6 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         } else { this.updateValue(); }
     }
     ngAfterViewInit() {
-        console.log(window.location);
         const urlSplit = new URLSearchParams(window.location.search);
         const promiseList = [null, null];
         if (urlSplit.get('file')) {
@@ -322,6 +328,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         }
     }
 
+
     @HostListener('window:message', ['$event'])
     async onWindowMessage(event: MessageEvent) {
         if (!event.data.messageType) {
@@ -348,6 +355,11 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                                     if (!res.ok) { return null; }
                                     return res.text();
                             }));
+
+                            // fetch(event.data.url).then( res => {
+                            //     if (!res.ok) { return null; }
+                            //     return res.text();
+                            // }).then(model => { if (model) importModel(newModel, model) });
                         } else if (Array.isArray(event.data.url)) {
                             event.data.url.forEach((url: string) => {
                                 allGIData.push(fetch(url).then(
@@ -358,16 +370,27 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                                     return res.text();
                                 }));
                             });
+
+
+                            // event.data.url.forEach((url: string) => {
+                            //     fetch(url).then( res => {
+                            //         if (!res.ok) { return null; }
+                            //         return res.text();
+                            //     }).then(model => { if (model) importModel(newModel, model) });
+                            // });
                         }
                     }
                     let results;
                     if (event.data.model) {
-                        if ((<string>event.data.model).startsWith('{"type":"GIJson"')) {
-                            newModel.importGI(event.data.model)
+                        if (Array.isArray(event.data.model)) {
+                            for (const modelString of event.data.model) {
+                                importModel(newModel, modelString)
+                            }
+                            this.turnOffOverlay();
                         } else {
-                            newModel.importSIM(event.data.model);
+                            importModel(newModel, event.data.model)
+                            this.turnOffOverlay();
                         }
-                        this.turnOffOverlay();
                     }
                     await Promise.all(allGIData).then((r) => results = r);
                     for (const data of results) {
@@ -386,6 +409,42 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                             if (zoomfit) { zoomfit.click(); }
                         }, 0);
                     }
+                    break;
+                case 'add_model':
+                    if (!event.data.url && !event.data.model) {
+                        this.setSpinner(false);
+                        return;
+                    }
+                    if (event.data.url) {
+                        if (typeof event.data.url === 'string') {
+                            fetch(event.data.url).then( res => {
+                                if (!res.ok) { return null; }
+                                return res.text();
+                            }).then(model => { if (model) importModel(this.data, model) });
+                        } else if (Array.isArray(event.data.url)) {
+                            event.data.url.forEach((url: string) => {
+                                fetch(url).then( res => {
+                                    if (!res.ok) { return null; }
+                                    return res.text();
+                                }).then(model => { if (model) importModel(this.data, model) });
+                            });
+                        }
+                    }
+                    if (event.data.model) {
+                        if (Array.isArray(event.data.model)) {
+                            for (const modelString of event.data.model) {
+                                importModel(this.data, modelString)
+                            }
+                            this.turnOffOverlay();
+                        } else {
+                            importModel(this.data, event.data.model)
+                            this.turnOffOverlay();
+                        }
+                    }
+                    setTimeout(() => {
+                        const zoomfit = document.getElementById('zoomingfit');
+                        if (zoomfit) { zoomfit.click(); }
+                    }, 0);
                     break;
                 case 'update_settings':
                     if (event.data.GI_settings) {
@@ -431,6 +490,8 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                     // const cesiumZoom = document.getElementById('cesium_zoom_fit');
                     // if (cesiumZoom) { cesiumZoom.click(); }
                     break;
+                case 'set_loading':
+                    return;
             }
             // const container = document.getElementById('dummy_container');
             // if (!event.data.showAttrTable) {
@@ -459,14 +520,12 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
     }
 
     switchToPublish() {
+        const existingPublish = document.getElementById('published');
+        if (existingPublish) { return; }
         const container = document.getElementById('dummy_container');
-        if (container.childElementCount === 0) {
-            const publishElement = document.createElement('div');
-            publishElement.setAttribute('id', 'published');
-            container.appendChild(publishElement);
-        } else if (container.childElementCount > 0) {
-            container.removeChild(container.firstElementChild);
-        }
+        const publishElement = document.createElement('div');
+        publishElement.setAttribute('id', 'published');
+        container.appendChild(publishElement);
     }
 
 }

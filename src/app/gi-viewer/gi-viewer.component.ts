@@ -462,6 +462,15 @@ export class GIViewerComponent implements OnInit, OnDestroy {
     //     const seg = setting.split('.');
     //     this.settings[seg[0]][seg[1]] = value;
     // }
+    updateCameraPos(event) {
+        const pos = event.target.value.split(',')
+        this.temp_camera_pos.x = pos[0]
+        this.temp_camera_pos.y = pos[1]
+        this.temp_camera_pos.z = pos[2]
+        // this.settings.camera.pos = this.temp_camera_pos;
+        // this.dataService.getThreejsScene().settings = this.settings;
+        this.threejs.updateModel(this.data);
+    }
 
     resetToDefault() {
         this.settings = JSON.parse(JSON.stringify(DefaultSettings));

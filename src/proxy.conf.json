@@ -1,6 +1,6 @@
 {
   "/function": {
-    "target": "http://172.16.28.245:8080",
+    "target": "http://172.16.187.248:8080",
     "secure": false
   }
 }

@@ -1105,6 +1105,10 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
                     if (this.shiftKeyPressed && scene.selected_geoms.has(ent_id)) {
                         this.unselectGeom(ent_id, GICommon.EEntTypeStr[GICommon.EEntType.PGON], true);
                     } else {
+                        window.parent.postMessage({
+                            messageType: 'select_pgon',
+                            data: 'pg' + pgon
+                        }, '*');
                         this.selectPGon(pgon);
                     }
                     // if (scene.selected_geoms.has(ent_id)) {

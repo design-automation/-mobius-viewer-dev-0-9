@@ -9,7 +9,7 @@
 			(action)="threejsAction($event)"
 			></threejs-viewer>
 			<button class='btn' id="settings_button" mat-icon-button (click)="openModal('settings_modal')" title="Settings"><mat-icon svgIcon='icon_settings'></mat-icon></button>
-			<button class='btn' id="gi_viewer_help_button" mat-icon-button (click)="openViewerHelp()" title="Help"><mat-icon svgIcon='icon_help'></mat-icon></button>
+			<!-- <button class='btn' id="gi_viewer_help_button" mat-icon-button (click)="openViewerHelp()" title="Help"><mat-icon svgIcon='icon_help'></mat-icon></button> -->
 		</as-split-area>
 		<as-split-area [size]='getSplit()' id="attrib">
 			<attribute [model]="data"
@@ -724,4 +724,5 @@
         <button (click)="closeModal('settings_modal');" class='filebtn closebtn setting'>Cancel</button>
         <button (click)="resetToDefault();" class='filebtn closebtn setting' style="float: right;">Default</button>
     </modal-window>
+    <button id="update_gi_camera_pos" (click)="updateCameraPos($event);" class="hidden"></button>
 </div>
