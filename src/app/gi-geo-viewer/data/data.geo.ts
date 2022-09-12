@@ -648,7 +648,7 @@ export class DataGeo {
             radius = 200;
         }
 
-        this._cameraLookat(center, radius);
+        this._cameraLookat(center, radius * 2 / 3);
     }
 
     private _cameraLookat(center, radius = 100) {
