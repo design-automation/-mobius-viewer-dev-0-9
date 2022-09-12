@@ -13,7 +13,7 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "deploy": "node --max-old-space-size=8192 ./node_modules/@angular/cli/bin/ng build --prod --base-href=%npm_package_config_prod_url% && npx ngh",
+    "deploy": "node --max-old-space-size=8192 ./node_modules/@angular/cli/bin/ng build --configuration production --base-href=%npm_package_config_prod_url% && npx ngh",
     "postinstall": "node mod3js.js"
   },
   "private": true,
