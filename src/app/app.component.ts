@@ -2,7 +2,7 @@ import { Component, Injector, Input,
     ViewChild, ViewContainerRef, ComponentFactoryResolver, OnDestroy, OnInit, DoCheck, HostListener, AfterViewInit } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
-import { _parameterTypes } from '@design-automation/mobius-sim-funcs';
+import { Model } from '@design-automation/mobius-sim-funcs';
 import { FileHandle } from './directives/dragDropDirective';
 import { DataService as GIDataService } from './gi-viewer/data/data.service';
 import { Viewers } from './model-viewers.config';
@@ -58,8 +58,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         // this.matIconRegistry.addSvgIcon('c3D Viewer', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/3D2.svg'));
         // this.matIconRegistry.addSvgIcon('cThree Geo Viewer', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/Icons/Geo.svg'));
         this.registerIcons();
-        const newModel = _parameterTypes.newFn();
-        this.data = newModel;
+        this.data = new Model();
     }
 
     registerIcons() {
@@ -139,7 +138,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
             }
         }
         setTimeout(async () => {
-            const newModel = _parameterTypes.newFn();
+            const newModel = new Model();
             for (const p of promiseList) {
                 const resultText = await p;
                 if (!resultText) { continue; }
@@ -188,7 +187,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         //                     this.setSpinner(false);
         //                     return;
         //                 }
-        //                 const newModel = _parameterTypes.newFn();
+        //                 const newModel = new Model();
         //                 newModel.importSIM(resultText);
         //                 this.data = newModel;
         //                 setTimeout(() => {
@@ -313,7 +312,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
         try {
             const fileReader = new FileReader();
             fileReader.onload = (e) => {
-                this.data = _parameterTypes.newFn();
+                this.data = new Model();
                 if ((<string>fileReader.result).startsWith('{"type":"GIJson"')) {
                     this.data.importGI(fileReader.result)
                 } else {
@@ -346,7 +345,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                         this.setSpinner(false);
                         return;
                     }
-                    const newModel = _parameterTypes.newFn();
+                    const newModel = new Model();
                     const allGIData = [];
                     if (event.data.url) {
                         if (typeof event.data.url === 'string') {
@@ -468,7 +467,7 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                         this.dataService.viewerSettingsUpdated = true
                     }
                     // const model = this.data;
-                    // const newModel = _parameterTypes.newFn();
+                    // const newModel = new Model();
                     // this.data = newModel;
                     // setTimeout(() => {
                     //     this.data = model;

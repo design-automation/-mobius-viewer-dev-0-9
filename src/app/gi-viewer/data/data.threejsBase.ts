@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import { Model } from '@design-automation/mobius-sim-funcs';
+import { Model, SIMFuncs } from '@design-automation/mobius-sim-funcs';
 import { DataService } from '@services';
 import { ISettings } from './data.threejsSettings';
 // import { WEBVR } from 'three/examples/jsm/vr/WebVR.js';
@@ -106,6 +106,8 @@ export class DataThreejsBase {
 
     protected _text_font = {};
 
+    protected sim_funcs: SIMFuncs;
+
     /**
      * Constructs a new data subscriber.
      */
@@ -115,6 +117,8 @@ export class DataThreejsBase {
             this.settings.directional_light.type = 'directional';
             localStorage.setItem('mpm_settings', JSON.stringify(this.settings));
         }
+
+        this.sim_funcs = new SIMFuncs();
 
         // scene
         this.scene = new THREE.Scene();
@@ -157,11 +161,11 @@ export class DataThreejsBase {
         // const orbit_controls = OrbitControls(THREE);
         // this.controls = new orbit_controls(this.camera, this.renderer.domElement);
         this.perspControls = new OrbitControls(this.perspCam, this.renderer.domElement);
-        this.perspControls.enableKeys = false;
+        // this.perspControls.enableKeys = false;
         this.perspControls.update();
 
         this.orthoControls = new OrbitControls(this.orthoCam, this.renderer.domElement);
-        this.orthoControls.enableKeys = false;
+        // this.orthoControls.enableKeys = false;
         // this.orthoControls.screenSpacePanning = false;
         this.orthoControls.screenSpacePanning = true;
         this.orthoControls.enableRotate = false;

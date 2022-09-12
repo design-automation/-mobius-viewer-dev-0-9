@@ -28,9 +28,8 @@ export class DataThreejsLookAt extends DataThreejsSelect {
                 radius = 50;
             }
         } else if (this._all_objs_sphere) {
-            center = new THREE.Vector3().copy(this._all_objs_sphere.center) ;
-            center.z = center.z - this._all_objs_sphere.radius / 3.5
-            radius = this._all_objs_sphere.radius * 2 / 3;
+            center = this._all_objs_sphere.center;
+            radius = this._all_objs_sphere.radius;
             if (radius === 0) {
                 radius = 50;
             }
@@ -222,6 +221,7 @@ export class DataThreejsLookAt extends DataThreejsSelect {
             }
             this.perspControls.update();
             this.orthoControls.update();
+            console.log(this.orthoControls)
         }
     }
 }

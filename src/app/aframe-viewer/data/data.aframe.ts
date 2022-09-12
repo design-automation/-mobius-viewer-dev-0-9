@@ -1,4 +1,4 @@
-import { Funcs, GICommon, Model } from '@design-automation/mobius-sim-funcs';
+import { Model, SIMFuncs, EEntType } from '@design-automation/mobius-sim-funcs';
 import { processDownloadURL } from '@shared/utils/otherUtils';
 import * as THREE from 'three';
 
@@ -47,7 +47,7 @@ export class DataAframe {
     };
 
     private _currentPos = null;
-    private _Funcs;
+    private sim_funcs: SIMFuncs;
 
     private north_rotation = 0;
 
@@ -62,7 +62,7 @@ export class DataAframe {
             this.vr.foreground_url = this.settings.vr.foreground_url;
             this.vr.foreground_rotation = this.settings.vr.foreground_rotation;
         }
-        this._Funcs = new Funcs();
+        this.sim_funcs = new SIMFuncs();
     }
 
     onChanges(changes, threejsScene) {
@@ -184,10 +184,11 @@ export class DataAframe {
         this.removeMobiusObjs();
         const threeJSGroup = new AFRAME.THREE.Group();
         this.navMeshEnabled = false;
+        if (!this.model) { return; }
         try {
-            this._Funcs._setModel(this.model);
-            const allPgons = this._Funcs.query.Get('pg', null) ;
-            const attrib = <any> this._Funcs.attrib.Get(allPgons, 'vr_nav_mesh');
+            this.sim_funcs.setModel(this.model);
+            const all_pgons = this.sim_funcs.model.getEnts(EEntType.PGON);
+            const attrib = <any> this.sim_funcs.model.getAttribVal(EEntType.PGON, all_pgons, 'vr_nav_mesh');
             if (attrib && attrib.length !== 0) {
                 this.navMeshEnabled = true;
             }
@@ -213,10 +214,10 @@ export class DataAframe {
         }
 
         // if there's a north attribute
-        if (this.model.modeldata.attribs.query.hasModelAttrib('north')) {
+        if (this.sim_funcs.model.hasModelAttrib('north')) {
 
             // get north attribute
-            const north_dir: any = this.model.modeldata.attribs.get.getModelAttribVal('north');
+            const north_dir: any = this.sim_funcs.model.getModelAttribVal('north');
 
             if (north_dir.constructor === [].constructor && north_dir.length === 2) {
                 // make the north vector and the default north vector
@@ -464,10 +465,21 @@ export class DataAframe {
 
     updateCamPos() {
         try {
-            this._Funcs._setModel(this.model);
-            const pts = <string[]> this._Funcs.query.Get('pt', null);
-            const pos = this._Funcs.attrib.Get(this._Funcs.query.Get('ps', pts), 'xyz');
-            const ptAttribs = this._Funcs.attrib.Get(pts, 'vr_hotspot');
+            this.sim_funcs.setModel(this.model);
+            // const pts = <string[]> this._Funcs.query.Get('pt', null);
+            // const pos = this._Funcs.attrib.Get(this._Funcs.query.Get('ps', pts), 'xyz');
+            // const ptAttribs = this._Funcs.attrib.Get(pts, 'vr_hotspot');
+
+            // TODO replace this with api methods
+            // const pts = <string[]> this.sim_funcs.model.getEnts(EEntType.POINT);
+            // const pts_posis = this.sim_funcs.model.getEnts(EEntType.POSI, pts);
+            // const xyzs = this.sim_funcs.model.getAttribVal(EEntType.POSI, pts_posis, 'xyz');
+            // const ptAttribs = this.sim_funcs.model.getAttribVal(EEntType.POINT, pts, 'vr_hotspot');
+
+            const pts = <string[]> this.sim_funcs.query.Get(<any> 'pt', null);
+            const xyzs = this.sim_funcs.attrib.Get(this.sim_funcs.query.Get(<any> 'ps', pts), 'xyz');
+            const ptAttribs = this.sim_funcs.attrib.Get(pts, 'vr_hotspot');
+
             this._currentPos = null;
             this.camPosList = [
                 {
@@ -482,7 +494,7 @@ export class DataAframe {
             for (let i = 0; i < pts.length; i++) {
                 if (!ptAttribs[i]) { continue; }
                 const cam = JSON.parse(JSON.stringify(ptAttribs[i]));
-                cam.pos = pos[i];
+                cam.pos = xyzs[i];
                 if (!cam.name) { cam.name = pts[i]; }
                 this.camPosList.push(cam);
             }
@@ -729,12 +741,12 @@ export class DataAframe {
     updateHUD() {
         if (!this.model || !this.model.modeldata) { return; }
         const hud = document.getElementById('aframe_hud');
-        if (!this.model.modeldata.attribs.query.hasEntAttrib(GICommon.EEntType.MOD, 'hud')) {
+        if (!this.sim_funcs.model.hasModelAttrib('hud')) {
             hud.innerHTML = '';
             hud.style.visibility = 'hidden';
             return;
         }
-        hud.innerHTML = this.model.modeldata.attribs.get.getModelAttribVal('hud') as string;
+        hud.innerHTML = this.sim_funcs.model.getModelAttribVal('hud') as string;
     }
 
     detachAframeView() {

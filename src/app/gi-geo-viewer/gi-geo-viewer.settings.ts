@@ -28,7 +28,7 @@ export const geo_default_settings: GeoSettings = {
         'rot': {'x': 0, 'y': 0, 'z': 0}
     },
     'time': {
-        'date': '2022-05-18T02:51',
+        'date': (new Date()).toISOString().split(':').slice(0, 2).join(':'),
     },
     'model': {
         'polygonEdge': false

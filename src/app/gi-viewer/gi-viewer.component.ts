@@ -526,6 +526,12 @@ export class GIViewerComponent implements OnInit, OnDestroy {
         return Math.round(value * 100) / 100;
     }
 
+    oncopy() {
+        const threejs = this.dataService.getThreejsScene()
+        const geoms = Array.from(threejs.selected_geoms.keys()).map( x =>`'${x}'`);
+        navigator.clipboard.writeText(`[${geoms.join(', ')}]`)
+    }
+
     @HostListener('mouseleave', [])
     onmouseleave() {
         this.viewerSplit.notify('end', this.viewerSplit.gutterSize);

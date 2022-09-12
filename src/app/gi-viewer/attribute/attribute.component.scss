@@ -138,9 +138,6 @@ table {
 }
 
 table{
-    &.c2{
-        tr.mat-row .mat-cell:nth-child(2), th:nth-child(2){font-style: italic}
-    }
     &.c3{
         white-space: pre;
         th {

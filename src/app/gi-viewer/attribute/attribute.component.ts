@@ -7,7 +7,7 @@ import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { DataService } from '../data/data.service';
 import { ATabsComponent } from './tabs.component';
-import { Model, GICommon} from '@design-automation/mobius-sim-funcs';
+import { Model, SIMFuncs, EEntType, EEntTypeStr} from '@design-automation/mobius-sim-funcs';
 
 enum SORT_STATE {
     DEFAULT,
@@ -38,15 +38,15 @@ export class AttributeComponent implements OnChanges {
     timer;
 
     tabs: { type?: number, title: string }[] = [
-        { type: GICommon.EEntType.POSI, title: 'Positions' },
-        // { type: GICommon.EEntType.VERT, title: 'Vertices' },
-        // { type: GICommon.EEntType.EDGE, title: 'Edges' },
-        // { type: GICommon.EEntType.WIRE, title: 'Wires' },
-        { type: GICommon.EEntType.POINT, title: 'Points' },
-        { type: GICommon.EEntType.PLINE, title: 'Polylines' },
-        { type: GICommon.EEntType.PGON, title: 'Polygons' },
-        { type: GICommon.EEntType.COLL, title: 'Collections' },
-        { type: GICommon.EEntType.MOD, title: 'Model' },
+        { type: EEntType.POSI, title: 'Positions' },
+        // { type: EEntType.VERT, title: 'Vertices' },
+        // { type: EEntType.EDGE, title: 'Edges' },
+        // { type: EEntType.WIRE, title: 'Wires' },
+        { type: EEntType.POINT, title: 'Points' },
+        { type: EEntType.PLINE, title: 'Polylines' },
+        { type: EEntType.PGON, title: 'Polygons' },
+        { type: EEntType.COLL, title: 'Collections' },
+        { type: EEntType.MOD, title: 'Model' },
         { title: 'Obj Topo' },
         { title: 'Col Topo' }
     ];
@@ -80,12 +80,12 @@ export class AttributeComponent implements OnChanges {
     protected dataService: DataService;
 
     tab_map = {
-        0: GICommon.EEntType.POSI,
-        1: GICommon.EEntType.POINT,
-        2: GICommon.EEntType.PLINE,
-        3: GICommon.EEntType.PGON,
-        4: GICommon.EEntType.COLL,
-        5: GICommon.EEntType.MOD
+        0: EEntType.POSI,
+        1: EEntType.POINT,
+        2: EEntType.PLINE,
+        3: EEntType.PGON,
+        4: EEntType.COLL,
+        5: EEntType.MOD
     };
 
     tab_rev_map = {
@@ -113,19 +113,21 @@ export class AttributeComponent implements OnChanges {
     };
 
     string_map = {
-        'ps': GICommon.EEntType.POSI,
-        '_v': GICommon.EEntType.VERT,
-        '_e': GICommon.EEntType.EDGE,
-        '_w': GICommon.EEntType.WIRE,
-        'pt': GICommon.EEntType.POINT,
-        'pl': GICommon.EEntType.PLINE,
-        'pg': GICommon.EEntType.PGON,
-        'co': GICommon.EEntType.COLL,
+        'ps': EEntType.POSI,
+        '_v': EEntType.VERT,
+        '_e': EEntType.EDGE,
+        '_w': EEntType.WIRE,
+        'pt': EEntType.POINT,
+        'pl': EEntType.PLINE,
+        'pg': EEntType.PGON,
+        'co': EEntType.COLL,
     };
     topoTypes = ['pg', 'pl', 'pt'];
 
 
     columnItalic = 'c2';
+
+    sim_funcs: SIMFuncs
 
     constructor(injector: Injector) {
         this.dataService = injector.get(DataService);
@@ -136,6 +138,7 @@ export class AttributeComponent implements OnChanges {
         this.dataSource.sortingDataAccessor = this._sortingDataAccessor;
         this.dataSourceTopo = new MatTableDataSource();
         this.dataSourceTopo.sortingDataAccessor = this._sortingDataAccessor;
+        this.sim_funcs = new SIMFuncs();
     }
 
     // ngDoCheck() {
@@ -162,6 +165,7 @@ export class AttributeComponent implements OnChanges {
     ngOnChanges(changes: SimpleChanges) {
         if (changes['model'] && this.model) {
             this.refreshTable();
+            this.sim_funcs.setModel(this.model)
         }
         if (changes['reset']) {
             this.resetTable();
@@ -219,15 +223,14 @@ export class AttributeComponent implements OnChanges {
             }
             if (tabIndex > 5) { return; }
 
-            const ThreeJSData = this.model.modeldata.attribs.threejs;
             if (Number(tabIndex) === 5) {
-                this.displayData = ThreeJSData.getModelAttribsForTable(this.nodeIndex);
+                this.displayData = this.sim_funcs.model.tableGetModelAttribs(this.nodeIndex);
             } else {
-                this.selected_ents = this.dataService.selected_ents.get(GICommon.EEntTypeStr[this.tab_map[tabIndex]]);
-
+                this.selected_ents = this.dataService.selected_ents.get(EEntTypeStr[this.tab_map[tabIndex]]);
+                // TODO remove modeldata ref
                 if (!this.model.modeldata.attribs.threejs) { return; }
                 if (this.showSelected) {
-                    const SelectedAttribData = ThreeJSData.getEntsVals(this.nodeIndex, this.selected_ents, this.tab_map[tabIndex]);
+                    const SelectedAttribData = this.sim_funcs.model.tableGetEntsVals(this.nodeIndex, this.selected_ents, this.tab_map[tabIndex]);
                     SelectedAttribData.map(row => {
                         if (this.selected_ents.has(row._id)) {
                             return row.selected = true;
@@ -235,7 +238,7 @@ export class AttributeComponent implements OnChanges {
                     });
                     this.displayData = SelectedAttribData.sort((a, b) => Number(a['_id'].slice(2)) - Number(b['_id'].slice(2)));
                 } else {
-                    const AllAttribData = ThreeJSData.getAttribsForTable(this.nodeIndex, this.tab_map[tabIndex]).data;
+                    const AllAttribData = this.sim_funcs.model.tableGetAttribs(this.nodeIndex, this.tab_map[tabIndex]).data;
                     AllAttribData.map(row => {
                         if (this.selected_ents.has(row._id)) {
                             return row.selected = true;
@@ -279,12 +282,11 @@ export class AttributeComponent implements OnChanges {
 
     generateTopoTable(ent_id: string, tabIndex: number, selected_type: string): boolean {
         const currentScroll = document.getElementById('topotable--container').scrollTop;
-        const ThreeJSData = this.model.modeldata.attribs.threejs;
         const id = Number(ent_id.substr(2));
         const ent_str = ent_id.slice(0, 2);
         let selected_type_str = selected_type.slice(0, 2);
         if (ent_str === 'co' && selected_type_str === 'ps') { selected_type_str = 'co'; }
-        const topoData = ThreeJSData.getEntSubAttribsForTable(this.nodeIndex, this.tab_map[tabIndex], id, this.string_map[selected_type_str]);
+        const topoData = this.sim_funcs.model.tableGetEntSubAttribs(this.nodeIndex, this.tab_map[tabIndex], id, this.string_map[selected_type_str]);
         const baseIndent = this.indent_map[ent_str];
         if (!topoData) {
             return false;
@@ -459,8 +461,7 @@ export class AttributeComponent implements OnChanges {
         }
 
         // Multiple row selection
-        const ThreeJSData = this.model.modeldata.attribs.threejs;
-        const attrib_table = ThreeJSData.getAttribsForTable(this.nodeIndex, this.tab_map[currentTab]);
+        const attrib_table = this.sim_funcs.model.tableGetAttribs(this.nodeIndex, this.tab_map[currentTab]);
         this.current_selected = id;
         const s = this.multi_selection;
 

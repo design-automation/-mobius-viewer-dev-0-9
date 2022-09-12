@@ -1,21 +1,20 @@
-import { Model, GICommon, _parameterTypes} from '@design-automation/mobius-sim-funcs';
+import { Model, SIMFuncs, EEntType } from '@design-automation/mobius-sim-funcs';
 import { GeoSettings } from '../gi-geo-viewer.settings';
-import * as itowns from 'itowns/lib/Main';
+import * as itowns from 'itowns';
 import * as THREE from 'three';
 import * as suncalc from 'suncalc';
 
-const LONGLAT = _parameterTypes.LONGLAT;
 export const API_MAPS = [
-                            'Here map normal',
-                            'Here map normal grey',
-                            'Here map normal traffic',
-                            'Here map normal reduced',
-                            'Here map normal pedestrian',
-                            'Here map aerial terrain',
-                            'Here map aerial satellite',
-                            'Here map aerial hybrid',
-                            'Bing Map'
-                        ];
+    'Here map normal',
+    'Here map normal grey',
+    'Here map normal traffic',
+    'Here map normal reduced',
+    'Here map normal pedestrian',
+    'Here map aerial terrain',
+    'Here map aerial satellite',
+    'Here map aerial hybrid',
+    'Bing Map'
+];
 export const API_MAPS_KEY_MAPPING = {
     'Here map normal': 'here',
     'Here map normal grey': 'here',
@@ -27,6 +26,8 @@ export const API_MAPS_KEY_MAPPING = {
     'Here map aerial hybrid': 'here',
     'Bing Map': 'bing'
 };
+export const LONGLAT = [103.778329, 1.298759];
+
 
 /**
  * Cesium data
@@ -35,7 +36,7 @@ export class DataGeo {
     public viewer: any;
     // the GI model to display
     public model: Model;
-
+    private sim_funcs: SIMFuncs;
     // Geo Settings
     public settings: GeoSettings;
     public attribution: string;
@@ -60,39 +61,7 @@ export class DataGeo {
         this.settings = JSON.parse(JSON.stringify(settings));
         this._getLayers();
         this._getTerrains();
-    }
-
-    private extractGeoloc() {
-        this.longitude = LONGLAT[0];
-        this.latitude = LONGLAT[1];
-        this.elevation = 0;
-        if (!this.model || !this.model.modeldata) { return; }
-        if (this.model.modeldata.attribs.query.hasModelAttrib('geolocation')) {
-            const geoloc: any = this.model.modeldata.attribs.get.getModelAttribVal('geolocation');
-            const long_value  = geoloc.longitude;
-            if (typeof long_value !== 'number') {
-                throw new Error('Longitude attribute must be a number.');
-            }
-            this.longitude = long_value as number;
-            if (this.longitude < -180 || this.longitude > 180) {
-                throw new Error('Longitude attribute must be between -180 and 180.');
-            }
-            const lat_value = geoloc.latitude;
-            if (typeof lat_value !== 'number') {
-                throw new Error('Latitude attribute must be a number');
-            }
-            this.latitude = lat_value as number;
-            if (this.latitude < 0 || this.latitude > 90) {
-                throw new Error('Latitude attribute must be between 0 and 90.');
-            }
-            if (geoloc.elevation) {
-                const ele_value = geoloc.elevation;
-                if (typeof ele_value !== 'number') {
-                    throw new Error('Elevation attribute must be a number');
-                }
-                this.elevation = ele_value as number;
-            }
-        }
+        this.sim_funcs = new SIMFuncs();
     }
 
     // matrix points from xyz to long lat
@@ -100,9 +69,8 @@ export class DataGeo {
      *
      */
     public createGeoViewer(threejsScene) {
-        this.extractGeoloc()
         const placement = {
-            coord: new itowns.Coordinates('EPSG:4326', this.longitude, this.latitude),
+            coord: new itowns.Coordinates('EPSG:4326', LONGLAT[0], LONGLAT[1]),
             range: 1000,
             tilt: 50
         };
@@ -157,9 +125,9 @@ export class DataGeo {
         }
         // const atmosphere = this.view.getLayerById('atmosphere');
         // atmosphere.setRealisticOn(true);
-        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.25);
+        const ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.15);
         this.view.scene.add(ambientLight);
-        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.25);
+        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.15);
         this.view.scene.add(hemiLight);
 
         if (this.model && threejsScene.model && threejsScene.model === this.model) {
@@ -277,6 +245,7 @@ export class DataGeo {
     }
 
     refreshModel(threejsScene, updatePos = false) {
+        this.sim_funcs.setModel(this.model)
         this.removeMobiusObjs();
         const threeJSGroup = new THREE.Group();
         threeJSGroup.name = 'mobius_geom';
@@ -288,7 +257,35 @@ export class DataGeo {
             }
         }
 
-        this.extractGeoloc();
+        this.longitude = LONGLAT[0];
+        this.latitude = LONGLAT[1];
+        this.elevation = 0;
+        if (this.sim_funcs.model.hasModelAttrib('geolocation')) {
+            const geoloc: any = this.sim_funcs.model.getModelAttribVal('geolocation');
+            const long_value  = geoloc.longitude;
+            if (typeof long_value !== 'number') {
+                throw new Error('Longitude attribute must be a number.');
+            }
+            this.longitude = long_value as number;
+            if (this.longitude < -180 || this.longitude > 180) {
+                throw new Error('Longitude attribute must be between -180 and 180.');
+            }
+            const lat_value = geoloc.latitude;
+            if (typeof lat_value !== 'number') {
+                throw new Error('Latitude attribute must be a number');
+            }
+            this.latitude = lat_value as number;
+            if (this.latitude < 0 || this.latitude > 90) {
+                throw new Error('Latitude attribute must be between 0 and 90.');
+            }
+            if (geoloc.elevation) {
+                const ele_value = geoloc.elevation;
+                if (typeof ele_value !== 'number') {
+                    throw new Error('Elevation attribute must be a number');
+                }
+                this.elevation = ele_value as number;
+            }
+        }
 
         this.camTarget = new itowns.Coordinates('EPSG:4326', this.longitude, this.latitude, this.elevation);
 
@@ -298,15 +295,14 @@ export class DataGeo {
 
         threeJSGroup.position.copy(cameraTargetPosition);
         threeJSGroup.position.z += 0.1;
-        threeJSGroup.lookAt(new THREE.Vector3(0, 0, 0));
-        threeJSGroup.rotateY(Math.PI);
 
+        itowns.OrientationUtils.quaternionFromEnuToGeocent(this.camTarget, threeJSGroup.quaternion) 
 
         // if there's a north attribute
-        if (this.model.modeldata.attribs.query.hasModelAttrib('north')) {
+        if (this.sim_funcs.model.hasModelAttrib('north')) {
 
             // get north attribute
-            const north_dir: any = this.model.modeldata.attribs.get.getModelAttribVal('north');
+            const north_dir: any = this.sim_funcs.model.getModelAttribVal('north');
 
             if (north_dir.constructor === [].constructor && north_dir.length === 2) {
                 // make the north vector and the default north vector
@@ -323,11 +319,16 @@ export class DataGeo {
         threeJSGroup.updateMatrixWorld(true);
         this.view.scene.add(threeJSGroup);
 
-        // this._addGround(threejsScene, cameraTargetPosition);
-        if (threejsScene._all_objs_sphere) {
-            this.scale = threejsScene._all_objs_sphere.radius*2;
+        if (threejsScene._all_objs_sphere && threejsScene._all_objs_sphere.radius) {
+            this.scale = threejsScene._all_objs_sphere.radius;
         } else {
-            this.scale = 1;
+            try {
+                const boxHelper = new THREE.BoxHelper(this.view.scene.getObjectByName('mobius_geom'));
+                boxHelper.geometry.computeBoundingSphere();
+                this.scale = boxHelper.geometry.boundingSphere.radius;
+            } catch (ex) {
+                this.scale = 100;
+            }
         }
 
         const lightTarget = new THREE.Object3D();
@@ -336,7 +337,7 @@ export class DataGeo {
         lightTarget.updateMatrixWorld(true);
         this.view.scene.add(lightTarget);
 
-        this.lookAtObj(threejsScene);
+        // this.lookAtObj(threejsScene);
 
         // this.view.scene.add(lighting);
         if (updatePos) {
@@ -446,12 +447,12 @@ export class DataGeo {
     updateHUD() {
         const hud = document.getElementById('geo_hud');
         if (hud) {
-            if (!this.model.modeldata.attribs.query.hasEntAttrib(GICommon.EEntType.MOD, 'hud')) {
+            if (!this.sim_funcs.model.hasAttrib(EEntType.MOD, 'hud')) {
                 hud.innerHTML = '';
                 hud.style.visibility = 'hidden';
                 return;
             }
-            hud.innerHTML = this.model.modeldata.attribs.get.getModelAttribVal('hud') as string;
+            hud.innerHTML = this.sim_funcs.model.getModelAttribVal('hud') as string;
         }
     }
 
@@ -638,7 +639,7 @@ export class DataGeo {
         let radius = null;
         if (threejsScene._all_objs_sphere) {
             center = threejsScene._all_objs_sphere.center;
-            radius = threejsScene._all_objs_sphere.radius * 2 / 3;
+            radius = threejsScene._all_objs_sphere.radius;
             if (radius < 200) {
                 radius = 200;
             }

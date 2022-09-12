@@ -2,9 +2,9 @@ import { VERSION } from '@env/version';
 import { Vector3 } from 'three';
 export const DefaultSettings = {
     normals: { show: false, size: 5 },
-    axes: { show: false, size: 50 },
+    axes: { show: true, size: 50 },
     grid: {
-        show: false,
+        show: true,
         size: 500,
         pos: new Vector3(0, 0, 0)
     },
@@ -22,7 +22,7 @@ export const DefaultSettings = {
         ortho: false
     },
     colors: {
-        viewer_bg: '#7D98BE',
+        viewer_bg: '#E6E6E6',
         position: '#000000',
         position_s: '#0033FF',
         vertex_s: '#FFCC00',
