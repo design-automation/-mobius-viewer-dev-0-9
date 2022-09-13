@@ -38,7 +38,7 @@ export class DataThreejsLookAt extends DataThreejsSelect {
             radius = 50;
         }
 
-        this._cameraLookat(center, radius);
+        this._cameraLookat(new THREE.Vector3(center.x, center.y, center.z - radius / 4), radius / 2);
     }
     // ============================================================================
     // Private methods
