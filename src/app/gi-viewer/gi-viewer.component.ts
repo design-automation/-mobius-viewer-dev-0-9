@@ -465,12 +465,22 @@ export class GIViewerComponent implements OnInit, OnDestroy {
     updateCameraPos(event) {
         const data = JSON.parse(event.target.value) as {
             viewer_source: string,
+            cam_type: string
             cam_pos: [number, number, number],
             cam_tgt: [number, number, number],
         }
+        if (data.viewer_source !== 'gi') { return; }
+        let check = 0;
+        while (this.threejs._data_threejs.currentCamera !== data.cam_type) {
+            this.threejs._data_threejs.switchCamera()
+            if (check > 5) {
+                console.log('ERROR: force quit')
+                break;
+            }
+            check += 1;
+        }
         const camera = this.threejs._data_threejs.camera
         const controls = this.threejs._data_threejs.controls
-        if (data.viewer_source !== 'gi') { return; }
         if (data.cam_pos) {
             camera.position.set(...data.cam_pos)
             camera.updateProjectionMatrix()

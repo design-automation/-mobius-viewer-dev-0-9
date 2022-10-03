@@ -737,6 +737,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
             messageType: 'camera_update',
             data: {
                 viewer_source: 'gi',
+                cam_type: this._data_threejs.currentCamera,
                 cam_pos: camera.position.toArray(),
                 cam_tgt: controls.target.toArray()
             }
