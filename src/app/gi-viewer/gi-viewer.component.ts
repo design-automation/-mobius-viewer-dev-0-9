@@ -463,13 +463,23 @@ export class GIViewerComponent implements OnInit, OnDestroy {
     //     this.settings[seg[0]][seg[1]] = value;
     // }
     updateCameraPos(event) {
-        const pos = event.target.value.split(',')
-        this.temp_camera_pos.x = pos[0]
-        this.temp_camera_pos.y = pos[1]
-        this.temp_camera_pos.z = pos[2]
-        // this.settings.camera.pos = this.temp_camera_pos;
-        // this.dataService.getThreejsScene().settings = this.settings;
-        this.threejs.updateModel(this.data);
+        const data = JSON.parse(event.target.value) as {
+            viewer_source: string,
+            cam_pos: [number, number, number],
+            cam_tgt: [number, number, number],
+        }
+        const camera = this.threejs._data_threejs.camera
+        const controls = this.threejs._data_threejs.controls
+        if (data.viewer_source !== 'gi') { return; }
+        if (data.cam_pos) {
+            camera.position.set(...data.cam_pos)
+            camera.updateProjectionMatrix()
+        }
+        if (data.cam_tgt) {
+            controls.target.set(...data.cam_tgt)
+            controls.update()
+        }
+        this.threejs.activateRender();
     }
 
     resetToDefault() {

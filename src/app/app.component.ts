@@ -489,6 +489,26 @@ export class AppComponent implements DoCheck, OnInit, OnDestroy, AfterViewInit {
                     // const cesiumZoom = document.getElementById('cesium_zoom_fit');
                     // if (cesiumZoom) { cesiumZoom.click(); }
                     break;
+                case 'update_camera':
+                    const gi_camera_pos_update = document.getElementById('update_gi_camera_pos') as HTMLInputElement;
+                    if (gi_camera_pos_update) {
+                        gi_camera_pos_update.value = JSON.stringify(event.data.data);
+                        gi_camera_pos_update.click();
+                    }
+                    const geo_camera_pos_update = document.getElementById('update_geo_camera_pos') as HTMLInputElement;
+                    if (geo_camera_pos_update) {
+                        geo_camera_pos_update.value = JSON.stringify(event.data.data);
+                        geo_camera_pos_update.click();
+                    }
+                    // const cesiumZoom = document.getElementById('cesium_zoom_fit');
+                    // if (cesiumZoom) { cesiumZoom.click(); }
+                    break;
+                // case 'add_camera_sync':
+                //     localStorage.setItem('camera_' + this.dataService.frameID, 'true')
+                //     break;
+                // case 'remove_camera_sync':
+                //     localStorage.removeItem('camera_' + this.dataService.frameID)
+                //     break;
                 case 'set_loading':
                     return;
             }

@@ -2,6 +2,7 @@
     id="threejs-container"
     (window:mousedown)="onMouseDown($event)"
     (window:mouseup)="onMouseUp($event)"
+    (wheel)="camPosMessage()"
 >
     <div
         *ngIf="_model_error"

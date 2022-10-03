@@ -700,39 +700,9 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         }
         this.lastX = null;
         this.lastY = null;
+        this.camPosMessage()
         // this.isDown = false;
     }
-    //----------------------------------------------------------------------------------------------
-    // public onMouseMove(event) {
-    //     const body = document.getElementsByTagName('body');
-
-    //     if (event.target.tagName !== 'CANVAS') {
-    //         // body[0].style.cursor = 'default';
-    //         return null;
-    //     } else {
-    //         if (!this.isDown) {
-    //             // const intersects = this.threeJSViewerService.initRaycaster(event);
-    //             // if (intersects && intersects.length > 0) {
-    //             //     body[0].style.cursor = 'pointer';
-    //             // } else {
-    //             //     body[0].style.cursor = 'default';
-    //             // }
-    //             return;
-    //         }
-
-    //         const mouseX = event.clientX - event.target.getBoundingClientRect().left;
-    //         const mouseY = event.clientY - event.target.getBoundingClientRect().top;
-    //         const dx = mouseX - this.lastX;
-    //         const dy = mouseY - this.lastY;
-    //         this.lastX = mouseX;
-    //         this.lastY = mouseY;
-
-    //         this.dragHash += Math.abs(dx) + Math.abs(dy);
-    //         if (this.dragHash > 4) {
-    //             // dragging
-    //         }
-    //     }
-    // }
     //----------------------------------------------------------------------------------------------
     onMouseDown(event) {
         if (event.target.tagName !== 'CANVAS' || !this.model) {
@@ -758,6 +728,19 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
     }
     //----------------------------------------------------------------------------------------------
     onKeyUp(event) {
+    }
+    //----------------------------------------------------------------------------------------------
+    camPosMessage() {
+        const camera = this._data_threejs.camera;
+        const controls = this._data_threejs.controls;
+        window.parent.postMessage({
+            messageType: 'camera_update',
+            data: {
+                viewer_source: 'gi',
+                cam_pos: camera.position.toArray(),
+                cam_tgt: controls.target.toArray()
+            }
+        }, '*');
     }
     //----------------------------------------------------------------------------------------------
     public onUserAction(event) {
@@ -1688,6 +1671,7 @@ export class ThreejsViewerComponent implements OnInit, DoCheck, OnChanges, OnDes
         } else {
             this._data_threejs.orthoLookatObj();
         }
+        this.camPosMessage()
     }
     //----------------------------------------------------------------------------------------------
     private EntTypeToStr(ent_type: EEntType) {

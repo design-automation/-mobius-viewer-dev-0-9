@@ -9,6 +9,7 @@ import { DataGeoService } from './data/data.geo.service';
 import { GeoSettings, geo_default_settings } from './gi-geo-viewer.settings';
 import { DataService as ThreeJSDataService } from '../gi-viewer/data/data.service';
 import { ModalService } from '@shared/services/modal-window.service';
+import * as itowns from 'itowns';
 
 /**
  * GIViewerComponent
@@ -72,6 +73,23 @@ export class GIGeoViewerComponent implements OnDestroy {
     ngOnDestroy() {
         clearInterval(this.settingsUpdateInterval);
         this.settingsUpdateInterval = null;
+    }
+
+    camPosMessage() {
+        const dataGeo = this.dataService.getGeoScene();
+        const controls = dataGeo.view.controls;
+        const coord = controls.getLookAtCoordinate();
+        console.log(coord)
+        window.parent.postMessage({
+            messageType: 'camera_update',
+            data: {
+                viewer_source: 'geo',
+                coord: [coord.crs, coord.x,  coord.y,  coord.z],
+                heading: controls.getHeading(),
+                tilt: controls.getTilt(),
+                range: controls.getRange(),
+            }
+        }, '*');
     }
 
     zoomfit() {
@@ -290,5 +308,38 @@ export class GIGeoViewerComponent implements OnDestroy {
         this.dataService.getGeoScene().updateLightPos(this.settings.time.date);
         this.dataService.getGeoScene().updateSettings(this.settings);
     }
+    public updateCameraPos(event) {
+        const data = JSON.parse(event.target.value) as {
+            viewer_source: string,
+            coord: [string, number, number, number],
+            heading: number,
+            tilt: number,
+            range: number,
+        }
+        const dataGeo = this.dataService.getGeoScene();
+        const controls = dataGeo.view.controls;
+        if (data.viewer_source !== 'geo') { return; }
+        itowns.CameraUtils.transformCameraToLookAtTarget(dataGeo.view, dataGeo.view.camera.camera3D, {
+            coord: new itowns.Coordinates(...data.coord),
+            tilt: data.tilt,
+            heading: data.heading,
+            range: data.range
+        });
 
+        // if (data.cam_pos) {
+        //     camera.camera3D.position.set(...data.cam_pos)
+        // }
+        // if (data.cam_rot) {
+        //     camera.camera3D.rotation.set(...data.cam_rot)
+        // }
+        // dataGeo.view.dispatchEvent({
+        //     type: 'camera-moved',
+        //     coord: camera.getCoor,
+        //     range: camera.range,
+        //     heading: this.heading,
+        //     tilt: this.tilt
+        // });
+    
+        // dataGeo.view.notifyChange(camera)
+    }
 }

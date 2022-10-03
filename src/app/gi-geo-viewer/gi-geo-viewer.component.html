@@ -1,4 +1,4 @@
-<div id="gi-viewer-container">
+<div id="gi-viewer-container" (mouseup)="camPosMessage()" (wheel)="camPosMessage()">
     <three-geo-viewer [model]="data" [nodeIndex]="nodeIndex"></three-geo-viewer>
     <button class='btn' id="settings_button" mat-icon-button (click)="openModal('geo_settings_modal')" title="Settings"><mat-icon svgIcon='icon_settings'></mat-icon></button>
     <button class='btn' id="geo_viewer_help_button" mat-icon-button (click)="openViewerHelp()" title="Help"><mat-icon svgIcon='icon_help'></mat-icon></button>
@@ -71,4 +71,5 @@
         <button (click)="resetToDefault();" class='filebtn closebtn setting'>Default</button>
     </modal-window>
     <div id='geo-attribution'></div>
+    <input id="update_geo_camera_pos" (click)="updateCameraPos($event);" class="hidden" />
 </div>
