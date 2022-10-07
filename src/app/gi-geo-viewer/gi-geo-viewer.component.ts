@@ -79,7 +79,6 @@ export class GIGeoViewerComponent implements OnDestroy {
         const dataGeo = this.dataService.getGeoScene();
         const controls = dataGeo.view.controls;
         const coord = controls.getLookAtCoordinate();
-        console.log(coord)
         window.parent.postMessage({
             messageType: 'camera_update',
             data: {
